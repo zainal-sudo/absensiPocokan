@@ -7,3 +7,10 @@ database.sqlite
 *.log
 .DS_Store
 Thumbs.db
+# Capacitor generated (dibuat ulang via npx cap sync)
+android/app/src/main/assets/
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/capacitor.settings.gradle

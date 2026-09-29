@@ -1,0 +1,59 @@
+# Build APK debug otomatis tiap push ke main (atau manual via Run workflow).
+# APK bisa diunduh di halaman Actions > artifact "app-debug".
+# PENTING: set repository variable API_BASE_URL di
+# GitHub > Settings > Secrets and variables > Actions > Variables,
+# contoh: http://103.94.238.252:3001  (tanpa garis miring di akhir)
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'android/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+
+      - name: Isi alamat server API + sync Capacitor
+        run: |
+          URL="${{ vars.API_BASE_URL }}"
+          if [ -n "$URL" ]; then
+            printf 'window.API_BASE_URL = "%s";\n' "$URL" > public/app-config.js
+            echo "API_BASE_URL=$URL"
+          else
+            echo "Variable API_BASE_URL kosong, APK memakai alamat relatif (hanya untuk tes)."
+          fi
+          npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk

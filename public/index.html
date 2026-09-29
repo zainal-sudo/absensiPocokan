@@ -363,7 +363,11 @@ if ('serviceWorker' in navigator) {
     });
 }
 </script>
+<script src="/app-config.js"></script>
 <script>
+    // Base URL API: browser ("") pakai alamat yang sedang dibuka,
+    // APK native diisi via app-config.js (cth "http://IP-VPS:3001").
+    const API_BASE = (window.API_BASE_URL || "").replace(/\/$/, "");
     const FACE_MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
     const FACE_THRESHOLD = 0.6;
     // Auto-recognition: jeda antar attempt & lama lock identitas tanpa aksi.
@@ -420,7 +424,7 @@ if ('serviceWorker' in navigator) {
     async function loadFaceDB() {
         const version = ++faceDBVersion;
         try {
-            const res = await fetch('/api/karyawan/descriptors');
+            const res = await fetch(API_BASE + '/api/karyawan/descriptors');
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
             if (version !== faceDBVersion) return; // respons lama tidak menimpa hasil setelah registrasi
@@ -1060,7 +1064,7 @@ if ('serviceWorker' in navigator) {
     function loadPabrik() {
         if (pabrikCache) { renderPabrikAdmin(); return Promise.resolve(pabrikCache); }
         if (pabrikRequest) return pabrikRequest;
-        pabrikRequest = fetch('/api/pabrik')
+        pabrikRequest = fetch(API_BASE + '/api/pabrik')
             .then(res => {
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return res.json();
@@ -1111,7 +1115,7 @@ if ('serviceWorker' in navigator) {
         // Bila registrasi selesai saat request awal masih berjalan, ambil data
         // terbaru setelah request itu selesai (jangan pakai hasil sebelum simpan).
         if (karyawanRequest) return refresh ? karyawanRequest.then(() => loadKaryawan()) : karyawanRequest;
-        karyawanRequest = fetch('/api/karyawan')
+        karyawanRequest = fetch(API_BASE + '/api/karyawan')
             .then(res => {
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return res.json();
@@ -1197,7 +1201,7 @@ if ('serviceWorker' in navigator) {
     }
 
     function loadHariIni() {
-        return fetch('/api/absensi/hari-ini')
+        return fetch(API_BASE + '/api/absensi/hari-ini')
             .then(res => {
                 if (!res.ok) throw new Error('Gagal mengambil absensi hari ini: HTTP ' + res.status);
                 return res.json();
@@ -1301,7 +1305,7 @@ if ('serviceWorker' in navigator) {
     }
 
     function loadLaporan() {
-        fetch('/api/absensi/laporan')
+        fetch(API_BASE + '/api/absensi/laporan')
             .then(res => res.json())
             .then(data => {
                 let html = '';
@@ -1377,7 +1381,7 @@ if ('serviceWorker' in navigator) {
         const postStart = performance.now();
         let postMeasured = false;
         try {
-            const res = await fetch('/api/absensi', {
+            const res = await fetch(API_BASE + '/api/absensi', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ karyawan_id, aksi, foto: capturedPhotoData })
@@ -1436,14 +1440,14 @@ if ('serviceWorker' in navigator) {
         try {
             let res;
             if (existingId) {
-                res = await fetch('/api/karyawan/' + existingId + '/face', {
+                res = await fetch(API_BASE + '/api/karyawan/' + existingId + '/face', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ foto_wajah: regPhotoData, face_descriptor: regDescriptor })
                 });
             } else {
                 if (!nama) { alert('Isi nama karyawan baru atau pilih karyawan lama!'); return; }
-                res = await fetch('/api/karyawan', {
+                res = await fetch(API_BASE + '/api/karyawan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

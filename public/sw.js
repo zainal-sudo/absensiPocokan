@@ -3,6 +3,7 @@
 const CACHE = 'absensi-v1';
 const SHELL = [
   '/',
+  '/app-config.js',
   '/manifest.webmanifest',
   '/css/app.css',
   '/icons/icon-192.png',
