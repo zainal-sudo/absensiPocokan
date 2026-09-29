@@ -3,6 +3,10 @@ const mysql = require('mysql2');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const os = require('os');
+
+// Muat .env bila ada (opsional, tanpa wajib install dotenv)
+try { require('dotenv').config(); } catch (e) {}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,12 +16,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// MySQL Connection Pool
+// MySQL Connection Pool (kredensial via environment, JANGAN hardcode password)
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',
-  password: 'PasswordBaru123!',
-  database: 'db_pocokan',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'db_pocokan',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -241,31 +245,54 @@ app.listen(PORT, '0.0.0.0', () => {
   startHttps();
 });
 
+function getLanIps() {
+  const nets = os.networkInterfaces();
+  const ips = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (net.family === 'IPv4' && !net.internal) {
+        ips.push(net.address);
+      }
+    }
+  }
+  return ips;
+}
+
 async function startHttps() {
   try {
     const keyPath = path.join(__dirname, 'key.pem');
     const certPath = path.join(__dirname, 'cert.pem');
-    if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+    const ipsPath = path.join(__dirname, 'cert-ips.txt');
+    const lanIps = getLanIps();
+    let savedIps = '';
+    try { savedIps = fs.existsSync(ipsPath) ? fs.readFileSync(ipsPath, 'utf8') : ''; } catch (e) {}
+    const needRegen = !fs.existsSync(keyPath) || !fs.existsSync(certPath) ||
+      lanIps.some(ip => !savedIps.includes(ip));
+    if (needRegen) {
       console.log('Membuat sertifikat HTTPS self-signed...');
       const selfsigned = require('selfsigned');
       const attrs = [{ name: 'commonName', value: 'absensi-pocokan' }];
+      const altNames = [
+        { type: 2, value: 'localhost' },
+        { type: 7, ip: '127.0.0.1' },
+        ...lanIps.map(ip => ({ type: 7, ip }))
+      ];
       const opts = {
         days: 825,
         keySize: 2048,
-        extensions: [{ name: 'subjectAltName', altNames: [
-          { type: 2, value: 'localhost' },
-          { type: 7, ip: '127.0.0.1' },
-          { type: 7, ip: '192.168.137.246' }
-        ] }]
+        extensions: [{ name: 'subjectAltName', altNames }]
       };
       const pems = await selfsigned.generate(attrs, opts);
       fs.writeFileSync(keyPath, pems.private);
       fs.writeFileSync(certPath, pems.cert);
-      console.log('Sertifikat dibuat: key.pem & cert.pem');
+      fs.writeFileSync(ipsPath, lanIps.join(','));
+      console.log('Sertifikat dibuat: key.pem & cert.pem (IP: ' + lanIps.join(', ') + ')');
     }
     const options = { key: fs.readFileSync(path.join(__dirname, 'key.pem')), cert: fs.readFileSync(path.join(__dirname, 'cert.pem')) };
     https.createServer(options, app).listen(HTTPS_PORT, '0.0.0.0', () => {
-      console.log(`Server Absensi HTTPS jalan di https://192.168.137.246:${HTTPS_PORT} (buka ini dari HP)`);
+      console.log(`Server Absensi HTTPS jalan di port ${HTTPS_PORT}. Buka dari HP:`);
+      getLanIps().forEach(ip => console.log(`  https://${ip}:${HTTPS_PORT} (abaikan peringatan sertifikat / Advanced > Proceed)`));
+      console.log(`HTTP (tanpa kamera HP): http://<IP-LAN>:${PORT}`);
     });
   } catch (e) {
     console.error('HTTPS gagal start:', e.message);

@@ -809,21 +809,44 @@
         // silent=true: dipakai auto-start — fallback ditulis ke box #hasil-scan
         //           (non-blocking). silent=false/falsey: behavior lama (alert).
         const failBox = silent ? document.getElementById('hasil-scan') : null;
-        const notify = function (msg) {
+        const notifyHtml = function (html) {
             if (failBox) {
                 failBox.style.display = 'block';
                 failBox.className = 'alert alert-warning';
-                failBox.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i> ' + msg;
+                failBox.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i> ' + html;
             } else {
-                alert(msg);
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                alert(tmp.textContent || tmp.innerText);
             }
         };
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            notify('Browser HP tidak mendukung kamera. Pakai Chrome Android terbaru.');
+        const notify = function (msg) { notifyHtml(String(msg).replace(/\n/g, '<br>')); };
+        function httpsSuggestion() {
+            try {
+                const h = location.hostname || 'IP-server';
+                // Kalau dibuka via http://IP:3000, pasangannya https://IP:3443.
+                // Port HTTPS diambil dari konstanta server bila bisa ditebak.
+                let port = location.port === '3000' ? '3443' : (location.port || '3443');
+                if (location.protocol === 'https:') return '';
+                const url = 'https://' + h + ':' + port + '/';
+                return '<br><br><b>Solusi:</b> buka versi aman:<br>' +
+                    '<a href="' + url + '" style="font-weight:700">' + url + '</a><br>' +
+                    '<span style="font-size:12px">Di Chrome akan ada peringatan sertifikat &rarr; pilih <b>Advanced / Lanjutan &rarr; Proceed / Lanjut</b>, lalu izinkan kamera.</span>';
+            } catch (e) { return ''; }
+        }
+        // PENTING: cek secureContext DULU. Di Chrome Android, bila halaman dibuka
+        // via http://IP (bukan https/localhost), navigator.mediaDevices menjadi
+        // undefined — jadi pengecekan mediaDevices duluan akan menampilkan pesan
+        // menyesatkan "Browser tidak mendukung", padahal masalahnya hanya HTTP.
+        if (!window.isSecureContext) {
+            notifyHtml('Kamera HP diblokir karena alamat masih <b>' + String(location.protocol) + '</b> (tidak aman, bukan HTTPS).' +
+                '<br>Alamat sekarang: <code>' + String(location.href).replace(/</g, '&lt;') + '</code>' +
+                httpsSuggestion() +
+                '<br><span style="font-size:12px">Catatan: di laptop <code>localhost</code> tetap bisa karena dianggap aman.</span>');
             return false;
         }
-        if (!window.isSecureContext) {
-            notify('Kamera HP diblokir karena alamat masih HTTP (tidak aman).\n\nSolusi: buka via HTTPS atau via localhost.\nContoh: https://IP-server:3000 (perlu sertifikat) atau pakai tunnel ngrok/cloudflared.\n\nDi laptop localhost tetap bisa karena dianggap aman.');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            notifyHtml('Browser HP ini benar-benar tidak mendukung kamera (bukan masalah HTTP — halaman ini sudah ' + String(location.protocol) + '). Pakai <b>Chrome Android terbaru</b>, bukan WebView/UC/Opera Mini.');
             return false;
         }
         stopStream(video);
