@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/app.css?v=att-filter-1">
 </head>
 <body>
 
@@ -58,6 +58,7 @@
             <div class="row g-3 g-lg-4">
                 <div class="col-12 col-lg-5">
                     <div class="card-kiosk kiosk">
+                        <div id="alert-box" role="status" aria-live="polite"></div>
                         <div class="card-head" style="display:block">
                             <h1 class="card-title card-title--lg">Absensi Kehadiran</h1>
                             <p class="kiosk__date" id="today-date-str">&nbsp;</p>
@@ -141,7 +142,6 @@
                             <i class="fa-solid fa-chevron-right att-summary-btn__chev"></i>
                         </button>
 
-                        <div id="alert-box" style="margin-top:14px" role="status" aria-live="polite"></div>
                     </div>
                 </div>
 
@@ -152,6 +152,11 @@
                                 <h2 class="card-title">Absensi Hari Ini</h2>
                                 <p class="card-sub" id="att-summary">Memuat data…</p>
                             </div>
+                        </div>
+                        <div class="att-filters" role="group" aria-label="Filter absensi hari ini">
+                            <button type="button" class="att-filter is-active" data-att-filter="semua" aria-pressed="true">Semua</button>
+                            <button type="button" class="att-filter" data-att-filter="sudah" aria-pressed="false">Sudah</button>
+                            <button type="button" class="att-filter" data-att-filter="belum" aria-pressed="false">Belum</button>
                         </div>
                         <div class="table-scroll att-scroll">
                             <table class="table-ui att-table">
@@ -318,6 +323,11 @@
                 <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Tutup"></button>
             </div>
             <div class="modal-body">
+                <div class="att-filters" role="group" aria-label="Filter absensi hari ini">
+                    <button type="button" class="att-filter is-active" data-att-filter="semua" aria-pressed="true">Semua</button>
+                    <button type="button" class="att-filter" data-att-filter="sudah" aria-pressed="false">Sudah</button>
+                    <button type="button" class="att-filter" data-att-filter="belum" aria-pressed="false">Belum</button>
+                </div>
                 <div class="table-scroll att-scroll">
                     <table class="table-ui att-table">
                         <thead>
@@ -361,6 +371,7 @@ if ('serviceWorker' in navigator) {
     const RECOGNITION_LOCK_TIMEOUT = 15000;
     let faceModelsLoaded = false;
     let faceDB = [];
+    let faceDBVersion = 0;
     let matchedKaryawan = null;
     let capturedPhotoData = "";
     let regPhotoData = "";
@@ -407,9 +418,12 @@ if ('serviceWorker' in navigator) {
     }
 
     async function loadFaceDB() {
+        const version = ++faceDBVersion;
         try {
             const res = await fetch('/api/karyawan/descriptors');
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             const data = await res.json();
+            if (version !== faceDBVersion) return; // respons lama tidak menimpa hasil setelah registrasi
             faceDB = (data || []).map(d => {
                 try { return { id: d.id, nama: d.nama, desc: new Float32Array(JSON.parse(d.face_descriptor)) }; }
                 catch (e) { return null; }
@@ -1002,15 +1016,6 @@ if ('serviceWorker' in navigator) {
     tickClock();
     setInterval(tickClock, 1000);
 
-    loadAllData();
-    initAutoKioskCamera();
-
-    function loadAllData() {
-        loadPabrik();
-        loadKaryawan();
-        loadHariIni();
-    }
-
     function startCamera() {
         // Fallback/retry: kamera dibuka manual, scanning tetap otomatis.
         // silent=true agar pesan kegagalan non-blocking di box #hasil-scan.
@@ -1042,56 +1047,136 @@ if ('serviceWorker' in navigator) {
         }
     }
 
-    function loadPabrik() {
-        fetch('/api/pabrik')
-            .then(res => res.json())
-            .then(data => {
-                let select = document.getElementById('k-pabrik');
-                if(select) select.innerHTML = '<option value="">-- Pilih Pabrik --</option>';
-                let html = '';
-                data.forEach(p => {
-                    if(select) select.innerHTML += `<option value="${escHtml(p.id)}">${escHtml(p.nama_pabrik)}</option>`;
-                    html += `<tr><td>${escHtml(p.nama_pabrik)}</td><td>${escHtml(p.lokasi) || '-'}</td></tr>`;
-                });
-                const tablePabrik = document.getElementById('table-pabrik');
-                if(tablePabrik) tablePabrik.innerHTML = html || '<tr><td colspan="2"><div class="empty-state"><i class="fa-solid fa-industry"></i>Belum ada pabrik</div></td></tr>';
-            });
+    let pabrikCache = null;
+    let pabrikRequest = null;
+    let pabrikTableRendered = false;
+    function renderPabrikAdmin() {
+        if (!pabrikCache || pabrikTableRendered || !document.getElementById('tab-pabrik').classList.contains('active')) return;
+        const html = pabrikCache.map(p => `<tr><td>${escHtml(p.nama_pabrik)}</td><td>${escHtml(p.lokasi) || '-'}</td></tr>`).join('');
+        document.getElementById('table-pabrik').innerHTML = html || '<tr><td colspan="2"><div class="empty-state"><i class="fa-solid fa-industry"></i>Belum ada pabrik</div></td></tr>';
+        pabrikTableRendered = true;
     }
 
-    function loadKaryawan() {
-        fetch('/api/karyawan')
-            .then(res => res.json())
-            .then(data => {
-                let select = document.getElementById('select-karyawan');
-                if(select) select.innerHTML = '<option value="">-- Pilih Nama Karyawan Manual --</option>';
-                let existing = document.getElementById('k-existing');
-                if(existing) existing.innerHTML = '<option value="">-- Pilih karyawan lama --</option>';
-                let html = '';
-                data.forEach(k => {
-                    if(select) select.innerHTML += `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`;
-                    if(existing) existing.innerHTML += `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`;
-                    const faceBadge = k.has_face
-                        ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> Terdaftar</span>'
-                        : '<span class="badge bg-secondary"><i class="fa-solid fa-circle-minus"></i> Belum</span>';
-                    html += `<tr>
-                        <td>${faceBadge}</td>
-                        <td><code>${escHtml(k.id)}</code></td>
-                        <td><strong>${escHtml(k.nama)}</strong></td>
-                        <td>${escHtml(k.posisi) || '-'}</td>
-                        <td>${escHtml(k.nama_pabrik) || '-'}</td>
-                    </tr>`;
-                });
-                const tableKaryawan = document.getElementById('table-karyawan');
-                if(tableKaryawan) tableKaryawan.innerHTML = html || '<tr><td colspan="5"><div class="empty-state"><i class="fa-regular fa-user"></i>Belum ada karyawan</div></td></tr>';
-                loadFaceDB();
+    function loadPabrik() {
+        if (pabrikCache) { renderPabrikAdmin(); return Promise.resolve(pabrikCache); }
+        if (pabrikRequest) return pabrikRequest;
+        pabrikRequest = fetch('/api/pabrik')
+            .then(res => {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
             })
-            .catch(err => console.error("Error loading karyawan:", err));
+            .then(data => {
+                pabrikCache = data;
+                const select = document.getElementById('k-pabrik');
+                const selected = select.value;
+                select.innerHTML = '<option value="">-- Pilih Pabrik --</option>' +
+                    data.map(p => `<option value="${escHtml(p.id)}">${escHtml(p.nama_pabrik)}</option>`).join('');
+                select.value = selected;
+                renderPabrikAdmin();
+                return data;
+            })
+            .catch(err => { console.error('Error loading pabrik:', err); return null; })
+            .finally(() => { pabrikRequest = null; });
+        return pabrikRequest;
     }
+
+    let karyawanCache = null;
+    let karyawanRequest = null;
+    let karyawanTableRendered = false;
+    function renderKaryawanAdmin() {
+        if (!karyawanCache || karyawanTableRendered || !document.getElementById('tab-karyawan').classList.contains('active')) return;
+        const existing = document.getElementById('k-existing');
+        const selected = existing.value;
+        const options = karyawanCache.map(k => `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`).join('');
+        existing.innerHTML = '<option value="">-- Pilih karyawan lama --</option>' + options;
+        existing.value = selected;
+
+        const html = karyawanCache.map(k => {
+            const faceBadge = k.has_face
+                ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> Terdaftar</span>'
+                : '<span class="badge bg-secondary"><i class="fa-solid fa-circle-minus"></i> Belum</span>';
+            return `<tr>
+                <td>${faceBadge}</td>
+                <td><code>${escHtml(k.id)}</code></td>
+                <td><strong>${escHtml(k.nama)}</strong></td>
+                <td>${escHtml(k.posisi) || '-'}</td>
+                <td>${escHtml(k.nama_pabrik) || '-'}</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('table-karyawan').innerHTML = html || '<tr><td colspan="5"><div class="empty-state"><i class="fa-regular fa-user"></i>Belum ada karyawan</div></td></tr>';
+        karyawanTableRendered = true;
+    }
+
+    function loadKaryawan(refresh = false) {
+        // Bila registrasi selesai saat request awal masih berjalan, ambil data
+        // terbaru setelah request itu selesai (jangan pakai hasil sebelum simpan).
+        if (karyawanRequest) return refresh ? karyawanRequest.then(() => loadKaryawan()) : karyawanRequest;
+        karyawanRequest = fetch('/api/karyawan')
+            .then(res => {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(data => {
+                karyawanCache = data;
+                karyawanTableRendered = false;
+                const select = document.getElementById('select-karyawan');
+                const selected = select.value;
+                const options = data.map(k => `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`).join('');
+                select.innerHTML = '<option value="">-- Pilih Nama Karyawan Manual --</option>' + options;
+                select.value = selected;
+                renderKaryawanAdmin();
+                return data;
+            })
+            .catch(err => { console.error('Error loading karyawan:', err); return null; })
+            .finally(() => { karyawanRequest = null; });
+        return karyawanRequest;
+    }
+
+    document.addEventListener('shown.bs.tab', function (e) {
+        const tab = e.target && e.target.getAttribute('data-bs-target');
+        if (tab === '#tab-karyawan') {
+            if (karyawanCache) renderKaryawanAdmin();
+            else if (!karyawanRequest) loadKaryawan();
+            loadPabrik(); // opsi pabrik untuk form pendaftaran
+        } else if (tab === '#tab-pabrik') {
+            loadPabrik();
+        }
+    });
 
     // Tampilan saja: batasi baris per render agar HP tidak berat (956 karyawan)
     const ATT_STEP = 30;
     let attShown = ATT_STEP;
     let attRowsCache = [];
+    let attFilter = 'semua';
+
+    function sortAttendanceRows(a, b) {
+        const aSudah = !!(a.jam_masuk || a.jam_pulang);
+        const bSudah = !!(b.jam_masuk || b.jam_pulang);
+        if (aSudah !== bSudah) return aSudah ? -1 : 1;
+        if (aSudah) {
+            const latestFirst = String(b.jam_pulang || b.jam_masuk).localeCompare(String(a.jam_pulang || a.jam_masuk));
+            if (latestFirst) return latestFirst;
+        }
+        const byName = String(a.nama || '').localeCompare(String(b.nama || ''), 'id', { sensitivity: 'base' });
+        return byName || String(a.karyawan_id || '').localeCompare(String(b.karyawan_id || ''));
+    }
+
+    function setAttendanceFilter(filter) {
+        if (!['semua', 'sudah', 'belum'].includes(filter)) return;
+        attFilter = filter;
+        attShown = ATT_STEP;
+        document.querySelectorAll('[data-att-filter]').forEach(button => {
+            const active = button.dataset.attFilter === filter;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+        renderHariIni(attRowsCache);
+    }
+
+    document.addEventListener('click', function (e) {
+        const button = e.target.closest('[data-att-filter]');
+        if (button) setAttendanceFilter(button.dataset.attFilter);
+    });
 
     // Ringkasan "Absensi Hari Ini" dari cache yang SUDAH ADA (attRowsCache).
     // X = jumlah sudah absen, Y = total karyawan — tanpa request API baru.
@@ -1119,13 +1204,13 @@ if ('serviceWorker' in navigator) {
             })
             .then(res => {
                 const rows = res.data || [];
-                attRowsCache = rows;
+                attRowsCache = rows.slice().sort(sortAttendanceRows);
                 attShown = ATT_STEP;
                 const counts = getAttSummary(rows);
                 const summary = document.getElementById('att-summary');
                 if (summary) summary.innerText = counts.total + ' karyawan · ' + counts.sudahAbsen + ' sudah absen · ' + counts.belum + ' belum absen';
                 refreshAttSummaryButton();
-                renderHariIni(rows);
+                renderHariIni(attRowsCache);
                 return true;
             })
             .catch(err => {
@@ -1137,7 +1222,11 @@ if ('serviceWorker' in navigator) {
     }
 
     function renderHariIni(rows) {
-        const visible = rows.slice(0, attShown);
+        const filtered = rows.filter(row => {
+            const sudah = !!(row.jam_masuk || row.jam_pulang);
+            return attFilter === 'semua' || (attFilter === 'sudah' ? sudah : !sudah);
+        });
+        const visible = filtered.slice(0, attShown);
         let html = '';
         visible.forEach(row => {
                     const foto = '<span class="att-avatar">' + escHtml(initials(row.nama)) + '</span>';
@@ -1170,12 +1259,16 @@ if ('serviceWorker' in navigator) {
                         '</tr>';
         });
 
-        if (!html) html = '<tr><td colspan="4"><div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i>Belum ada data karyawan</div></td></tr>';
+        if (!html) {
+            const msg = attFilter === 'sudah' ? 'Belum ada karyawan yang sudah absen' :
+                attFilter === 'belum' && rows.length ? 'Semua karyawan sudah absen' : 'Belum ada data karyawan';
+            html = '<tr><td colspan="4"><div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i>' + msg + '</div></td></tr>';
+        }
 
-        if (attShown < rows.length) {
+        if (attShown < filtered.length) {
             html += '<tr id="att-more-row"><td colspan="4">' +
                 '<button type="button" class="btn-ui btn-ui--block btn-ui--sm" id="att-more-btn" onclick="attMore()">' +
-                '<i class="fa-solid fa-chevron-down"></i> Tampilkan ' + Math.min(ATT_STEP, rows.length - attShown) + ' lagi · sisa ' + (rows.length - attShown) +
+                '<i class="fa-solid fa-chevron-down"></i> Tampilkan ' + Math.min(ATT_STEP, filtered.length - attShown) + ' lagi · sisa ' + (filtered.length - attShown) +
                 '</button></td></tr>';
         }
 
@@ -1233,20 +1326,46 @@ if ('serviceWorker' in navigator) {
         if (e.target && e.target.getAttribute('data-bs-target') === '#tab-laporan') loadLaporan();
     });
 
+    let attendanceToastTimer = null;
+    let attendanceToastExitTimer = null;
+
+    function dismissAttendanceToast() {
+        const box = document.getElementById('alert-box');
+        const toast = box.querySelector('.attendance-toast');
+        if (!toast || toast.classList.contains('attendance-toast--leaving')) return;
+        clearTimeout(attendanceToastTimer);
+        toast.classList.add('attendance-toast--leaving');
+        attendanceToastExitTimer = setTimeout(() => { if (box.contains(toast)) toast.remove(); }, 260);
+    }
+
+    function showAttendanceToast(type, icon, message) {
+        clearTimeout(attendanceToastTimer);
+        clearTimeout(attendanceToastExitTimer);
+        const box = document.getElementById('alert-box');
+        box.innerHTML = `<div class="alert alert-${type} attendance-toast">
+            <i class="fa-solid ${icon} attendance-toast__icon" aria-hidden="true"></i>
+            <span class="attendance-toast__text">${escHtml(message)}</span>
+            <button type="button" class="attendance-toast__close" aria-label="Tutup notifikasi"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+        </div>`;
+        attendanceToastTimer = setTimeout(dismissAttendanceToast, 3000);
+    }
+
+    document.getElementById('alert-box').addEventListener('click', function (e) {
+        if (e.target.closest('.attendance-toast__close')) dismissAttendanceToast();
+    });
+
     let absenSubmitting = false;
     async function submitAbsen(aksi) {
         if (absenSubmitting) return;
         const manualId = document.getElementById('select-karyawan').value;
         const karyawan_id = matchedKaryawan ? matchedKaryawan.id : manualId;
-        const alertBox = document.getElementById('alert-box');
-
         if (!karyawan_id) {
-            alertBox.innerHTML = '<div class="alert alert-warning"><i class="fa-solid fa-circle-info me-1"></i> Scan wajah dulu atau pilih nama manual!</div>';
+            showAttendanceToast('warning', 'fa-circle-info', 'Scan wajah dulu atau pilih nama manual!');
             return;
         }
 
         if (!capturedPhotoData) {
-            alertBox.innerHTML = '<div class="alert alert-warning"><i class="fa-solid fa-camera me-1"></i> Silakan buka kamera dan ambil foto wajah (verifikasi) terlebih dahulu!</div>';
+            showAttendanceToast('warning', 'fa-camera', 'Silakan buka kamera dan ambil foto wajah (verifikasi) terlebih dahulu!');
             return;
         }
 
@@ -1268,7 +1387,7 @@ if ('serviceWorker' in navigator) {
             postMeasured = true;
             if (!res.ok) throw new Error(data.error);
             const icon = aksi === 'masuk' ? 'fa-door-open' : 'fa-door-closed';
-            alertBox.innerHTML = `<div class="alert alert-success"><i class="fa-solid ${icon} me-1"></i> ${escHtml(data.message)}</div>`;
+            showAttendanceToast('success', icon, data.message);
             document.getElementById('img-result').style.display = 'none';
             document.getElementById('btn-verify-face').style.display = 'none';
             const hs = document.getElementById('hasil-scan');
@@ -1294,7 +1413,7 @@ if ('serviceWorker' in navigator) {
             syncKioskCameraButton();
         } catch (err) {
             if (!postMeasured) console.info(`[Absensi] POST /api/absensi (${aksi}) gagal setelah ${(performance.now() - postStart).toFixed(0)} ms`);
-            alertBox.innerHTML = '<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> ' + escHtml(err.message) + '</div>';
+            showAttendanceToast('danger', 'fa-triangle-exclamation', err.message);
             // Submit gagal → identity tetap terkunci, tapi aktifkan auto-reset 15 detik
             // supaya tidak "nyangkut" selamanya jika user tidak melakukan apa-apa.
             if (identityLocked && !recognitionLockTimer) {
@@ -1348,7 +1467,8 @@ if ('serviceWorker' in navigator) {
             if(regVideo.srcObject) regVideo.srcObject.getTracks().forEach(t => t.stop());
             regVideo.style.display = 'none';
             document.getElementById('btn-snap-face').style.display = 'none';
-            loadAllData();
+            // Segarkan hanya data yang berubah, tanpa memuat ulang tab lain.
+            await Promise.all([loadKaryawan(true), loadFaceDB(), ...(!existingId ? [loadHariIni()] : [])]);
             alert('Wajah berhasil didaftarkan! Sekarang bisa scan otomatis.');
         } catch (err) { alert(err.message); }
     }
@@ -1357,6 +1477,12 @@ if ('serviceWorker' in navigator) {
         e.preventDefault();
         alert('Data pabrik dibaca langsung dari database MySQL (tabel tpabrik).');
     }
+
+    // Mulai setelah seluruh cache/state halaman terinisialisasi; kamera tidak
+    // boleh tertahan oleh error inisialisasi data admin.
+    initAutoKioskCamera();
+    loadKaryawan(); // dropdown manual kiosk diisi saat awal
+    loadHariIni();
 </script>
 </body>
 </html>

@@ -286,7 +286,7 @@ code {
 /* ==========================================================================
    KIOSK — Absensi Kehadiran
    ========================================================================== */
-.kiosk { padding: 20px 16px 18px; }
+.kiosk { padding: 20px 16px 18px; position: relative; }
 
 .kiosk__date {
     margin: 4px 0 0;
@@ -647,6 +647,55 @@ tr#att-more-row {
 .alert strong { font-weight: 700; }
 .alert code { background: rgba(255, 255, 255, .7); }
 
+/* Pesan absen melayang di atas judul, tanpa menggeser isi card. */
+#tab-kiosk #alert-box {
+    position: absolute;
+    z-index: 25;
+    top: 10px;
+    left: 12px;
+    right: 12px;
+    pointer-events: none;
+}
+
+.attendance-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    box-shadow: 0 8px 24px rgba(11, 31, 58, .16);
+    pointer-events: auto;
+    animation: attendance-toast-in .3s ease-out both;
+}
+
+.attendance-toast__icon { flex: none; }
+.attendance-toast__text { flex: 1; min-width: 0; }
+.attendance-toast__close {
+    flex: none;
+    align-self: flex-start;
+    min-width: 32px;
+    min-height: 32px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    opacity: .75;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
+}
+.attendance-toast__close:hover { opacity: 1; }
+.attendance-toast__close:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.attendance-toast--leaving { animation: attendance-toast-out .25s ease-in both; }
+
+@keyframes attendance-toast-in {
+    from { transform: translateY(-130%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes attendance-toast-out {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(-130%); opacity: 0; }
+}
+
 /* --- Hasil auto-recognition (identity lock) --- */
 .recog-result {
     margin-top: 14px;
@@ -727,6 +776,23 @@ tr#att-more-row {
 .table-ui .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* --- Absensi hari ini --- */
+.att-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.att-filter {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-pill);
+    background: #fff;
+    color: var(--gray-600);
+    padding: 7px 14px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.att-filter:hover { border-color: var(--brand-500); color: var(--brand-700); }
+.att-filter.is-active { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+.att-filter:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+#att-modal .att-filters { margin-bottom: 10px; }
+
 .att-scroll { max-height: 520px; }
 
 .att-avatar {
@@ -1100,17 +1166,6 @@ tr#att-more-row {
        daftarnya dipindah ke modal full-screen; tombol compact di atas. */
     #tab-kiosk .row > .col-12.col-lg-7 { display: none; }
 
-    /* Pesan sukses/gagal submit = TOAST overlay di atas card (bukan baris di
-       flow) supaya card tidak bertambah tinggi & workflow tetap tanpa scroll. */
-    #tab-kiosk .kiosk { position: relative; }
-    #tab-kiosk #alert-box {
-        position: absolute;
-        left: 12px;
-        right: 12px;
-        top: 10px;
-        z-index: 25;
-        margin: 0;
-    }
 }
 
 /* 360px: paling sempit */
