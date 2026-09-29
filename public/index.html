@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi HP Kantor - Anti Titip Absen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="theme-color" content="#0b1f3a">
+    <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<header class="app-header">
+    <div class="app-header__inner">
+        <a class="app-brand" href="#">
+            <span class="app-brand__mark"><i class="fa-solid fa-shield-halved"></i></span>
+            <span class="app-brand__text">
+                <span class="app-brand__title">Absensi Pocokan</span>
+                <span class="app-brand__sub">Anti Titip Absen</span>
+            </span>
+        </a>
+        <span class="app-header__spacer"></span>
+        <div class="app-clock">
+            <span class="app-clock__label">Waktu</span>
+            <span class="app-clock__time" id="current-time">--:--</span>
+        </div>
+    </div>
+</header>
+
+<main class="app-shell">
+    <ul class="nav nav-pills nav-rail" id="pills-tab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#tab-kiosk" type="button" role="tab" aria-controls="tab-kiosk" aria-selected="true"><i class="fa-solid fa-camera-retro"></i><span class="nav-label-short">Absen</span><span class="nav-label-long">Mesin Absen HP</span></button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-karyawan" type="button" role="tab" aria-controls="tab-karyawan" aria-selected="false"><i class="fa-solid fa-users"></i><span class="nav-label-short">Karyawan</span><span class="nav-label-long">Data &amp; Pendaftaran Karyawan</span></button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-pabrik" type="button" role="tab" aria-controls="tab-pabrik" aria-selected="false"><i class="fa-solid fa-industry"></i><span class="nav-label-short">Pabrik</span><span class="nav-label-long">Data Pabrik</span></button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-laporan" type="button" role="tab" aria-controls="tab-laporan" aria-selected="false"><i class="fa-solid fa-file-lines"></i><span class="nav-label-short">Rekap</span><span class="nav-label-long">Rekap Absensi</span></button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- TAB 1: KIOSK ABSEN (HP KANTOR) -->
+        <div class="tab-pane fade show active" id="tab-kiosk">
+            <div class="row g-3 g-lg-4">
+                <div class="col-12 col-lg-5">
+                    <div class="card-kiosk kiosk">
+                        <div class="card-head" style="display:block">
+                            <h1 class="card-title card-title--lg">Absensi Kehadiran</h1>
+                            <p class="kiosk__date" id="today-date-str">&nbsp;</p>
+                        </div>
+
+                        <div class="kiosk__chips">
+                            <span class="badge bg-secondary" id="face-model-status"><i class="fa-solid fa-spinner fa-spin"></i> Model wajah: memuat…</span>
+                            <span class="badge bg-info" id="face-db-status">Wajah terdaftar: –</span>
+                        </div>
+
+                        <!-- AREA SCAN WAJAH -->
+                        <div class="scan" id="scan-area">
+                            <div class="scan__icon"><i class="fa-solid fa-face-smile"></i></div>
+                            <h2 class="scan__title">Scan Wajah</h2>
+                            <p class="scan__hint">Arahkan wajah ke kamera — dikenali otomatis, lalu tekan MASUK / PULANG.</p>
+
+                            <div class="scan__actions">
+                                <button type="button" class="btn-ui btn-ui--primary" id="btn-buka-kamera" onclick="startCamera()" style="display:none;">
+                                    <i class="fa-solid fa-camera"></i> <span id="btn-buka-kamera-label">Buka Kamera</span>
+                                </button>
+                                <button type="button" class="btn-ui btn-ui--sm" onclick="scanWajahOtomatis()" id="btn-verify-face" style="display:none;">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Scan &amp; Kenali Wajah
+                                </button>
+                            </div>
+
+                            <video id="video-preview" autoplay playsinline muted></video>
+                            <canvas id="canvas-capture" style="display:none;"></canvas>
+                            <img id="img-result" alt="Foto Absen">
+                            <div id="hasil-scan" class="alert alert-info" style="display:none;"></div>
+
+                            <!-- HASIL AUTO-RECOGNITION (LOCK SEMENTARA) -->
+                            <div id="recog-result" class="recog-result" style="display:none;">
+                                <div class="recog-result__ok"><i class="fa-solid fa-circle-check"></i> Wajah dikenali</div>
+                                <div class="recog-result__name" id="recog-name"></div>
+                                <div class="recog-result__nik" id="recog-nik"></div>
+                            </div>
+                        </div>
+
+                        <!-- AKSI UTAMA: [MASUK] [PULANG] — wajib selalu terlihat setelah kamera/identitas -->
+                        <div class="actions" id="kiosk-actions">
+                            <button type="button" class="btn-att btn-att--masuk" onclick="submitAbsen('masuk')">
+                                <i class="fa-solid fa-arrow-right-to-bracket"></i> MASUK
+                            </button>
+                            <button type="button" class="btn-att btn-att--pulang" onclick="submitAbsen('pulang')">
+                                <i class="fa-solid fa-arrow-right-from-bracket"></i> PULANG
+                            </button>
+                        </div>
+
+                        <!-- Baris aksi sekunder compact: Scan Ulang | Pilih manual (manual collapsed di HP) -->
+                        <div class="kiosk-secondary">
+                            <div class="kiosk-secondary__scan text-center">
+                                <button type="button" class="btn-ui btn-ui--sm" id="btn-scan-ulang" onclick="scanUlang()" style="display:none;">
+                                    <i class="fa-solid fa-rotate-right"></i> Scan Ulang
+                                </button>
+                            </div>
+
+                            <!-- FALLBACK MANUAL (secondary) — collapsed di HP, tetap utuh di desktop -->
+                            <div class="manual">
+                                <button type="button" class="manual__toggle" id="btn-manual-toggle" aria-expanded="false" aria-controls="manual-body">
+                                    <i class="fa-solid fa-id-card"></i>
+                                    <span id="btn-manual-toggle-label">Pilih manual</span>
+                                    <i class="fa-solid fa-chevron-down manual__toggle-caret"></i>
+                                </button>
+                                <div class="manual__body" id="manual-body">
+                                    <div class="manual__head">
+                                        <i class="fa-solid fa-divider"></i>
+                                        <label class="manual__label" for="select-karyawan">Atau pilih karyawan secara manual</label>
+                                    </div>
+                                    <p class="manual__hint">Gunakan bila wajah belum terdaftar di database.</p>
+                                    <select class="form-select-ui" id="select-karyawan" name="karyawan">
+                                        <option value="">— Pilih Nama Karyawan —</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol buka daftar "Absensi Hari Ini" (mobile) — card daftar disembunyikan di HP -->
+                        <button type="button" class="att-summary-btn" id="btn-open-att-modal" onclick="openAttModal()">
+                            <span class="att-summary-btn__label"><i class="fa-solid fa-users me-1"></i>Absensi Hari Ini</span>
+                            <span class="att-summary-btn__count" id="att-summary-count">–/–</span>
+                            <i class="fa-solid fa-chevron-right att-summary-btn__chev"></i>
+                        </button>
+
+                        <div id="alert-box" style="margin-top:14px" role="status" aria-live="polite"></div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-7">
+                    <div class="card-kiosk">
+                        <div class="card-head">
+                            <div>
+                                <h2 class="card-title">Absensi Hari Ini</h2>
+                                <p class="card-sub" id="att-summary">Memuat data…</p>
+                            </div>
+                        </div>
+                        <div class="table-scroll att-scroll">
+                            <table class="table-ui att-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Karyawan</th>
+                                        <th scope="col">Masuk</th>
+                                        <th scope="col">Pulang</th>
+                                        <th scope="col">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-hari-ini">
+                                    <!-- Populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: KARYAWAN -->
+        <div class="tab-pane fade" id="tab-karyawan">
+            <div class="row g-3 g-lg-4">
+                <!-- Form Tambah/Daftar Karyawan -->
+                <div class="col-12 col-lg-5 col-xl-4">
+                    <div class="card-kiosk">
+                        <div class="card-head">
+                            <div>
+                                <h2 class="card-title">Daftar Wajah Karyawan</h2>
+                                <p class="card-sub">Wajah wajib didaftarkan agar bisa dikenali otomatis.</p>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning">Untuk karyawan lama, pilih nama lalu ambil wajah dan klik Daftarkan Wajah.</div>
+                        <div class="field">
+                            <label class="form-label-ui" for="k-existing">Karyawan Lama (untuk daftar wajah)</label>
+                            <select class="form-select-ui" id="k-existing">
+                                <option value="">— Pilih karyawan lama —</option>
+                            </select>
+                        </div>
+                        <form onsubmit="tambahKaryawan(event)">
+                            <div class="field">
+                                <label class="form-label-ui" for="k-nama">Nama Karyawan Baru <span class="text-muted fw-normal">(kosongkan jika pilih karyawan lama)</span></label>
+                                <input type="text" class="form-control-ui" id="k-nama" placeholder="Nama lengkap...">
+                            </div>
+                            <div class="field">
+                                <label class="form-label-ui" for="k-posisi">Bagian / Posisi</label>
+                                <input type="text" class="form-control-ui" id="k-posisi" placeholder="Cth: Bagian Packing">
+                            </div>
+                            <div class="field">
+                                <label class="form-label-ui" for="k-pabrik">Pabrik</label>
+                                <select class="form-select-ui" id="k-pabrik">
+                                    <option value="">— Pilih Pabrik —</option>
+                                </select>
+                            </div>
+                            <!-- Pendaftaran Wajah -->
+                            <div class="field" style="text-align:center">
+                                <label class="form-label-ui" style="text-align:left">Foto Wajah Validasi</label>
+                                <button type="button" class="btn-ui btn-ui--sm" onclick="startRegCamera()"><i class="fa-solid fa-camera"></i> Buka Kamera Pendaftaran</button>
+                                <video id="reg-video-preview" autoplay playsinline muted></video>
+                                <canvas id="reg-canvas-capture" style="display:none;"></canvas>
+                                <button type="button" class="btn-ui btn-ui--sm" id="btn-snap-face" onclick="captureRegFace()" style="display:none;margin-top:10px"><i class="fa-solid fa-check"></i> Ambil Foto Wajah</button>
+                                <button type="button" class="btn-ui btn-ui--sm" onclick="diagnosaWajah()"><i class="fa-solid fa-stethoscope"></i> Diagnosa</button>
+                                <img id="reg-img-result" alt="Wajah Karyawan">
+                                <div id="reg-face-status" class="manual__hint" style="text-align:left"></div>
+                                <pre id="reg-debug-log" class="text-start bg-dark text-light rounded p-2 mt-2" style="font-size:10px;max-height:150px;overflow-y:auto;display:none;"></pre>
+                            </div>
+                            <button type="submit" class="btn-ui btn-ui--primary btn-ui--block"><i class="fa-solid fa-floppy-disk"></i> Simpan / Daftarkan Wajah</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabel Data Karyawan -->
+                <div class="col-12 col-lg-7 col-xl-8">
+                    <div class="card-kiosk">
+                        <div class="card-head">
+                            <h2 class="card-title">Daftar Karyawan Terdaftar</h2>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="table-ui">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Wajah</th>
+                                        <th scope="col">Kode</th>
+                                        <th scope="col">Nama Karyawan</th>
+                                        <th scope="col">Bagian</th>
+                                        <th scope="col">Pabrik</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-karyawan">
+                                    <!-- Populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: PABRIK -->
+        <div class="tab-pane fade" id="tab-pabrik">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-9">
+                    <div class="card-kiosk">
+                        <div class="card-head">
+                            <div>
+                                <h2 class="card-title">Data Pabrik</h2>
+                                <p class="card-sub">Dibaca langsung dari database (tabel: tpabrik).</p>
+                            </div>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="table-ui">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Nama Pabrik</th>
+                                        <th scope="col">Lokasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-pabrik">
+                                    <!-- Populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: LAPORAN -->
+        <div class="tab-pane fade" id="tab-laporan">
+            <div class="card-kiosk">
+                <div class="card-head">
+                    <h2 class="card-title">Rekap Absensi Kehadiran Karyawan</h2>
+                </div>
+                <div class="table-scroll" style="max-height:640px">
+                    <table class="table-ui">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tanggal</th>
+                                <th scope="col">Nama</th>
+                                <th scope="col">Bagian</th>
+                                <th scope="col">Pabrik</th>
+                                <th scope="col">Masuk</th>
+                                <th scope="col">Pulang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-laporan">
+                            <!-- Populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- MODAL: daftar Absensi Hari Ini (mobile). Renderer/attRowsCache/pagination LAMA dipakai ulang. -->
+<div class="modal fade" id="att-modal" tabindex="-1" aria-labelledby="att-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen-md-down modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="att-modal-title"><i class="fa-solid fa-users me-1"></i>Absensi Hari Ini</h5>
+                <p class="modal-sub ms-1" id="att-modal-summary">– sudah absen · – belum</p>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-scroll att-scroll">
+                    <table class="table-ui att-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Karyawan</th>
+                                <th scope="col">Masuk</th>
+                                <th scope="col">Pulang</th>
+                                <th scope="col">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-hari-ini-modal">
+                            <!-- Populated oleh renderHariIni() -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ui btn-ui--primary btn-ui--block" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+    const FACE_MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+    const FACE_THRESHOLD = 0.6;
+    // Auto-recognition: jeda antar attempt & lama lock identitas tanpa aksi.
+    const AUTO_RECOGNITION_INTERVAL = 1200;
+    const RECOGNITION_LOCK_TIMEOUT = 15000;
+    let faceModelsLoaded = false;
+    let faceDB = [];
+    let matchedKaryawan = null;
+    let capturedPhotoData = "";
+    let regPhotoData = "";
+    let regDescriptor = null;
+    // State auto-recognition (hanya satu loop / satu timer / satu stream).
+    let autoRecognitionTimer = null;
+    let recognitionLockTimer = null;
+    let recognitionInProgress = false;
+    let identityLocked = false;
+    // Token generasi untuk membatalkan attempt recognition "basi" yang masih
+    // berjalan saat Scan Ulang / inactivity / submit membatalkan identity.
+    let recognitionEpoch = 0;
+
+    // Helper tampilan saja (aman untuk nama dari database)
+    function escHtml(v) {
+        return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function initials(nama) {
+        return String(nama || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('') || '?';
+    }
+
+    async function loadFaceModels() {
+        const el = document.getElementById('face-model-status');
+        const urls = [FACE_MODEL_URL, 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights'];
+        if (typeof faceapi === 'undefined') {
+            console.error('face-api.js tidak termuat (CDN diblokir?)');
+            if (el) { el.className = 'badge bg-danger'; el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Model wajah gagal dimuat'; }
+            return;
+        }
+        for (const url of urls) {
+            try {
+                if (el) { el.className = 'badge bg-warning'; el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Model wajah: memuat…'; }
+                await faceapi.nets.tinyFaceDetector.loadFromUri(url);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(url);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(url);
+                faceModelsLoaded = true;
+                if (el) { el.className = 'badge bg-success'; el.innerHTML = '<i class="fa-solid fa-circle-check"></i> Model wajah: siap'; }
+                console.log('Model wajah dimuat dari', url);
+                return;
+            } catch (e) { console.warn('Gagal load model dari', url, e.message); }
+        }
+        if (el) { el.className = 'badge bg-danger'; el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Model wajah gagal (cek internet) — ketuk untuk coba lagi'; el.style.cursor = 'pointer'; el.onclick = loadFaceModels; }
+    }
+
+    async function loadFaceDB() {
+        try {
+            const res = await fetch('/api/karyawan/descriptors');
+            const data = await res.json();
+            faceDB = (data || []).map(d => {
+                try { return { id: d.id, nama: d.nama, desc: new Float32Array(JSON.parse(d.face_descriptor)) }; }
+                catch (e) { return null; }
+            }).filter(Boolean);
+            const el = document.getElementById('face-db-status');
+            if (el) el.innerHTML = '<i class="fa-solid fa-id-card"></i> Wajah terdaftar: ' + faceDB.length;
+        } catch (e) { console.error('Gagal load DB wajah:', e); }
+    }
+
+    function euclidean(a, b) {
+        let s = 0;
+        for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; }
+        return Math.sqrt(s);
+    }
+
+    function findBestMatch(query) {
+        let best = null, bestDist = Infinity;
+        faceDB.forEach(row => {
+            if (!row.desc || row.desc.length !== query.length) return;
+            const dist = euclidean(query, row.desc);
+            if (dist < bestDist) { bestDist = dist; best = row; }
+        });
+        if (best && bestDist <= FACE_THRESHOLD) return { ...best, distance: bestDist };
+        return null;
+    }
+
+    async function waitVideoReady(video) {
+        for (let i = 0; i < 20; i++) {
+            if (video.videoWidth > 0 && video.readyState >= 2) return true;
+            await new Promise(r => setTimeout(r, 150));
+        }
+        return video.videoWidth > 0;
+    }
+
+    function rlog(msg) {
+        // Debug hanya untuk flow registrasi yang AKTIF (tab kiosk tidak aktif).
+        // Auto-recognition kiosk memanggil detectDescriptor → rlog harus no-op
+        // agar tidak menulis DOM/console setiap attempt (tiap 1,2 dtk).
+        if (document.querySelector('#tab-kiosk.active')) return;
+        console.log('[wajah]', msg);
+        const pre = document.getElementById('reg-debug-log');
+        if (pre) { pre.style.display = 'block'; pre.textContent += new Date().toLocaleTimeString('id-ID') + ' ' + msg + '\n'; pre.scrollTop = pre.scrollHeight; }
+    }
+
+    async function diagnosaWajah() {
+        const pre = document.getElementById('reg-debug-log');
+        if (pre) { pre.style.display = 'block'; pre.textContent = ''; }
+        rlog('secureContext=' + window.isSecureContext + ' url=' + location.href);
+        rlog('faceapi ada=' + (typeof faceapi !== 'undefined') + ' modelSiap=' + faceModelsLoaded);
+        rlog('tiny=' + !!(typeof faceapi !== 'undefined' && faceapi.nets.tinyFaceDetector.isLoaded) + ' landmark=' + !!(typeof faceapi !== 'undefined' && faceapi.nets.faceLandmark68Net.isLoaded) + ' recog=' + !!(typeof faceapi !== 'undefined' && faceapi.nets.faceRecognitionNet.isLoaded));
+        const v = document.getElementById('reg-video-preview');
+        rlog('video src=' + !!v.srcObject + ' width=' + v.videoWidth + 'x' + v.videoHeight + ' readyState=' + v.readyState);
+        if (!v.srcObject) { rlog('KESIMPULAN: kamera belum dibuka. Klik Buka Kamera dulu.'); return; }
+        rlog('coba deteksi cepat (tanpa descriptor)...');
+        try {
+            const d = await faceapi.detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 }));
+            rlog(d ? ('wajah KETEMU skor=' + d.score.toFixed(3) + ' box=' + Math.round(d.box.width) + 'x' + Math.round(d.box.height)) : 'wajah TIDAK ketemu (coba maju/dekat/terang)');
+        } catch (e) { rlog('ERROR deteksi: ' + e.message); }
+    }
+
+    async function detectDescriptor(input, tag) {
+        const optsList = [
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.15 }),
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.2 }),
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.25 })
+        ];
+        for (const opt of optsList) {
+            try {
+                const det = await faceapi.detectAllFaces(input, opt).withFaceLandmarks().withFaceDescriptors();
+                rlog((tag || 'detect') + ' inputSize=' + opt.inputSize + ' thr=' + opt.scoreThreshold + ' wajah=' + det.length);
+                if (det.length > 0) {
+                    det.sort((a, b) => (b.detection.box.width * b.detection.box.height) - (a.detection.box.width * a.detection.box.height));
+                    rlog('pakai wajah terbesar skor=' + det[0].detection.score.toFixed(3));
+                    return det[0].descriptor;
+                }
+            } catch (e) { rlog('detect ERROR: ' + e.message); }
+        }
+        return null;
+    }
+
+    async function getDescriptorFromVideo(video) {
+        await waitVideoReady(video);
+        let desc = await detectDescriptor(video);
+        if (desc) return desc;
+        // fallback: deteksi dari frame canvas (sering lebih stabil)
+        try {
+            const c = document.createElement('canvas');
+            c.width = video.videoWidth || 320; c.height = video.videoHeight || 240;
+            c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+            desc = await detectDescriptor(c);
+            if (desc) return desc;
+        } catch (e) { console.warn('fallback canvas gagal:', e.message); }
+        return null;
+    }
+
+    async function getDescriptorFromImage(img) {
+        try { await new Promise((res, rej) => { if (img.complete && img.naturalWidth) res(); else { img.onload = res; img.onerror = rej; } }); } catch (e) {}
+        return await detectDescriptor(img);
+    }
+
+    // ---------- AUTO FACE RECOGNITION (tanpa klik tombol scan) ----------
+    // Status ringan di box #hasil-scan tanpa spam (hanya re-render jika berubah).
+    let lastScanStatus = '';
+    function showScanStatus(kind, msg) {
+        const box = document.getElementById('hasil-scan');
+        if (!box) return;
+        const cls = kind === 'ok' ? 'alert alert-success' : (kind === 'warn' ? 'alert alert-warning' : 'alert alert-info');
+        const key = cls + '||' + msg;
+        if (key === lastScanStatus && box.style.display === 'block') return; // anti-spam per-tick
+        lastScanStatus = key;
+        box.className = cls;
+        box.innerHTML = msg;
+        box.style.display = 'block';
+    }
+
+    // Sembunyikan box status ringan — dipakai saat identity locked, karena
+    // identitas sudah ditampilkan oleh SATU kartu (recog-result).
+    function hideScanStatus() {
+        const box = document.getElementById('hasil-scan');
+        if (box) box.style.display = 'none';
+    }
+
+    // Satu attempt recognition (dipakai auto-loop & tombol manual/fallback).
+    async function recognizeFromCamera() {
+        if (recognitionInProgress) return;   // cegah overlap
+        if (identityLocked) return;          // identity sudah di-lock
+        const video = document.getElementById('video-preview');
+        if (!video || !video.srcObject || !video.videoWidth) return;
+        if (!faceModelsLoaded || faceDB.length === 0) return;
+        recognitionInProgress = true;
+        const epoch = recognitionEpoch;      // tangkap epoch sebelum await
+        try {
+            const query = await getDescriptorFromVideo(video);
+            // Jika ada reset (Scan Ulang / inactivity / submit) selama await,
+            // batalkan attempt ini agar tidak me-lock identity yang sudah dibatalkan.
+            if (epoch !== recognitionEpoch) return;
+            if (!query) { showScanStatus('info', '<i class="fa-solid fa-circle-info me-1"></i> Posisikan wajah di depan kamera'); return; }
+            capturePhoto(); // siapkan foto verifikasi (MASUK/PULANG/manual)
+            if (epoch !== recognitionEpoch) return;
+            const match = findBestMatch(query);
+            if (epoch !== recognitionEpoch) return;
+            if (match) {
+                lockIdentity(match);
+            } else {
+                showScanStatus('warn', '<i class="fa-solid fa-user-slash me-1"></i> Wajah belum dikenali, coba posisikan kembali');
+            }
+        } catch (e) {
+            console.error(e);
+            showScanStatus('info', '<i class="fa-solid fa-rotate me-1"></i> Gagal scan, dicoba lagi otomatis');
+        } finally {
+            recognitionInProgress = false;
+        }
+    }
+
+    // Loop auto-recognition — hanya SATU interval untuk seluruh halaman.
+    function startAutoRecognition() {
+        if (autoRecognitionTimer) return;    // jangan buat loop kedua
+        autoRecognitionTimer = setInterval(autoRecognitionTick, AUTO_RECOGNITION_INTERVAL);
+    }
+
+    function stopAutoRecognition() {
+        if (autoRecognitionTimer) { clearInterval(autoRecognitionTimer); autoRecognitionTimer = null; }
+    }
+
+    async function autoRecognitionTick() {
+        if (identityLocked || recognitionInProgress) return;
+        await recognizeFromCamera();
+    }
+
+    function clearRecognitionLockTimer() {
+        if (recognitionLockTimer) { clearTimeout(recognitionLockTimer); recognitionLockTimer = null; }
+    }
+
+    // LOCK identity sementara — PAUSE auto-recognition sampai user memutuskan.
+    function lockIdentity(match) {
+        clearRecognitionLockTimer();
+        identityLocked = true;
+        matchedKaryawan = match;
+        stopAutoRecognition();               // hentikan loop selama lock
+        const nameEl = document.getElementById('recog-name');
+        const nikEl = document.getElementById('recog-nik');
+        if (nameEl) nameEl.textContent = match.nama;
+        if (nikEl) nikEl.textContent = 'NIK: ' + match.id;
+        const resEl = document.getElementById('recog-result');
+        if (resEl) resEl.style.display = 'block';
+        const btnUlang = document.getElementById('btn-scan-ulang');
+        if (btnUlang) btnUlang.style.display = 'inline-flex';
+        // SATU kartu identitas (recog-result): jangan tampilkan alert sukses kedua.
+        hideScanStatus();
+        recognitionLockTimer = setTimeout(onRecognitionInactivity, RECOGNITION_LOCK_TIMEOUT);
+    }
+
+    // Clear identity + UI (TIDAK menghentikan kamera/stream).
+    function resetRecognitionState() {
+        clearRecognitionLockTimer();
+        recognitionEpoch++;                 // batalkan attempt recognition yang masih berjalan
+        identityLocked = false;
+        matchedKaryawan = null;
+        capturedPhotoData = "";
+        const resEl = document.getElementById('recog-result');
+        if (resEl) resEl.style.display = 'none';
+        const btnUlang = document.getElementById('btn-scan-ulang');
+        if (btnUlang) btnUlang.style.display = 'none';
+        const imgRes = document.getElementById('img-result');
+        if (imgRes) imgRes.style.display = 'none';
+    }
+
+    // Fallback inactivity: ±15 detik tanpa aksi → reset & loop lagi.
+    function onRecognitionInactivity() {
+        clearRecognitionLockTimer();
+        resetRecognitionState();
+        showScanStatus('info', '<i class="fa-solid fa-circle-info me-1"></i> Posisikan wajah di depan kamera');
+        // Hanya hidupkan kembali loop bila tab kiosk masih aktif — timeout lock
+        // bisa terjadi saat user sudah pindah tab (jangan inferensi di belakang layar).
+        maybeResumeKioskRecognition();
+    }
+
+    // Tombol "Scan Ulang" — reset identity, kamera tetap hidup, loop kembali aktif.
+    function scanUlang() {
+        resetRecognitionState();
+        showScanStatus('info', '<i class="fa-solid fa-circle-info me-1"></i> Posisikan wajah di depan kamera');
+        maybeResumeKioskRecognition();
+    }
+
+    // Tombol lama "Scan & Kenali Wajah" — tetap ada sebagai fallback manual.
+    async function scanWajahOtomatis() {
+        await recognizeFromCamera();
+    }
+
+    loadFaceModels();
+    loadFaceDB();
+
+    function stopStream(video) {
+        if (video && video.srcObject) {
+            video.srcObject.getTracks().forEach(t => { try { t.stop(); } catch (e) {} });
+            video.srcObject = null;
+        }
+    }
+
+    // Tampilan saja: tandai area scan ketika kamera aktif
+    function setScanLive(isLive) {
+        const area = document.getElementById('scan-area');
+        if (area) area.classList.toggle('scan--live', !!isLive);
+        // Tinggi card memakai min-height (CSS .kiosk), bukan height fixed —
+        // card boleh bertambah setelah identity dikenali (halaman scroll sedikit).
+    }
+
+    // --- Preview mengikuti aspect ratio stream asli ---
+    // INI hanya mengubah layout elemen <video> pada preview live.
+    // Canvas capture / descriptor / face-api membaca buffer video asli,
+    // sehingga mirror & rasio tidak mengubah data recognition.
+    function applyCameraAspect(video) {
+        if (!video || !(video.videoWidth > 0 && video.videoHeight > 0)) return;
+        video.style.aspectRatio = String(video.videoWidth / video.videoHeight);
+    }
+
+    ['video-preview', 'reg-video-preview'].forEach(function (id) {
+        const v = document.getElementById(id);
+        if (!v) return;
+        v.addEventListener('loadedmetadata', function () { applyCameraAspect(v); });
+        v.addEventListener('resize', function () { applyCameraAspect(v); });
+    });
+
+    // --- Auto-start kamera Mesin Absen HP (tanpa klik "Buka Kamera") ---
+    let kioskCameraBusy = false;
+
+    function kioskCameraActive() {
+        const v = document.getElementById('video-preview');
+        if (!v || !v.srcObject) return false;
+        try {
+            return v.srcObject.getVideoTracks().some(t => t.readyState === 'live');
+        } catch (e) { return false; }
+    }
+
+    async function ensureKioskCamera() {
+        const video = document.getElementById('video-preview');
+        if (!video) return;
+        // PENCEGAHAN STREAM GANDA:
+        // 1) jangan mulai request baru jika kamera sudah terbuka/berjalan
+        // 2) jangan tumpuk getUserMedia saat proses auto-start masih berjalan
+        if (kioskCameraBusy) return;
+        if (kioskCameraActive()) return;
+        kioskCameraBusy = true;
+        try {
+            // silent=true: peringatan/fallback ditampilkan di box #hasil-scan,
+            // bukan alert() blocking — cocok untuk auto-start (mis. izin ditolak).
+            // btnToShow=null: tombol "Scan & Kenali Wajah" lama TIDAK dimunculkan
+            // di alur otomatis (scanning sudah otomatis).
+            const ok = await openCamera(video, null, true);
+            if (ok) {
+                applyCameraAspect(video);
+                startAutoRecognition();
+            }
+        } catch (e) {
+            console.error('Auto kamera gagal (fallback: tekan Buka Kamera):', e);
+        } finally {
+            kioskCameraBusy = false;
+            syncKioskCameraButton();
+        }
+    }
+
+    // Tombol "Coba Buka Kamera" — hanya muncul bila kamera TIDAK aktif
+    // (auto-open gagal / permission denied / stream berhenti).
+    // Fungsi openCamera/startCamera tetap dipertahankan (retry manual).
+    function syncKioskCameraButton() {
+        const btn = document.getElementById('btn-buka-kamera');
+        const label = document.getElementById('btn-buka-kamera-label');
+        if (!btn) return;
+        if (kioskCameraActive() || kioskCameraBusy) {
+            btn.style.display = 'none';
+            return;
+        }
+        if (label) label.textContent = 'Coba Buka Kamera';
+        btn.style.display = 'inline-flex';
+    }
+
+    // Kiosk mobile: tinggi card memakai min-height = calc(100dvh - offset), BUKAN
+    // height fixed — setelah identity dikenali card boleh tumbuh & halaman scroll
+    // sedikit. Offset diukur document-relative (offsetTop), JADI TIDAK berubah
+    // saat user menggulir (berbeda dengan getBoundingClientRect().top).
+    // --kiosk-video-max DIHAPUS: video tidak lagi dikecilkan ke ~110px oleh JS;
+    // ukuran preview diatur CSS (min-height area + max-height relatif viewport).
+    function measureKioskOffset() {
+        const card = document.querySelector('#tab-kiosk .kiosk');
+        if (!card) return;
+        let offset = 0;
+        let el = card;
+        while (el && el !== document.body) {
+            offset += el.offsetTop || 0;
+            el = el.offsetParent;
+        }
+        offset = Math.max(0, Math.round(offset));
+        const root = document.documentElement;
+        // setProperty hanya bila nilainya berubah → hindari style recalc berulang.
+        if (root.style.getPropertyValue('--kiosk-offset') !== offset + 'px') {
+            root.style.setProperty('--kiosk-offset', offset + 'px');
+        }
+    }
+
+    // Debounce resize — browser HP memantik banyak event (address-bar show/hide,
+    // keyboard, orientasi). Geometri dibaca sekali setelah jeda 120 ms.
+    let kioskMeasureTimer = 0;
+    function scheduleKioskMeasure() {
+        if (kioskMeasureTimer) return;
+        kioskMeasureTimer = setTimeout(function () {
+            kioskMeasureTimer = 0;
+            measureKioskOffset();
+        }, 120);
+    }
+
+    // Hidupkan auto-recognition HANYA bila: tab kiosk aktif, kamera hidup,
+    // identity tidak locked. startAutoRecognition menjaga tidak ada loop ganda.
+    function maybeResumeKioskRecognition() {
+        const pane = document.getElementById('tab-kiosk');
+        if (!pane || !pane.classList.contains('active')) return;
+        if (identityLocked) return;
+        if (kioskCameraActive()) {
+            startAutoRecognition();
+            return;
+        }
+        ensureKioskCamera(); // sukses → startAutoRecognition dipanggil di sana
+    }
+
+    // Manual fallback di HP: collapsed default, dropdown dibuka saat ditekan.
+    function initManualToggle() {
+        const btn = document.getElementById('btn-manual-toggle');
+        const body = document.getElementById('manual-body');
+        const label = document.getElementById('btn-manual-toggle-label');
+        if (!btn || !body) return;
+        btn.addEventListener('click', function () {
+            const open = !body.classList.contains('is-open');
+            body.classList.toggle('is-open', open);
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (label) label.textContent = open ? 'Tutup pilihan manual' : 'Pilih manual';
+        });
+    }
+
+    function initAutoKioskCamera() {
+        // Kembali ke tab Mesin Absen HP → pastikan kamera aktif & loop hidup
+        document.addEventListener('shown.bs.tab', function (e) {
+            const target = (e.target && typeof e.target.getAttribute === 'function' && e.target.getAttribute('data-bs-target')) || '';
+            if (target === '#tab-kiosk') {
+                measureKioskOffset();
+                syncKioskCameraButton();
+                maybeResumeKioskRecognition();
+            }
+        });
+        // Pindah dari tab Mesin Absen HP → hentikan loop recognition (stream tetap).
+        document.addEventListener('hidden.bs.tab', function (e) {
+            const target = (e.target && typeof e.target.getAttribute === 'function' && e.target.getAttribute('data-bs-target')) || '';
+            if (target === '#tab-kiosk') stopAutoRecognition();
+        });
+        // App ke background / di-unload → hentikan loop; kembali → resume bila kiosk aktif.
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) stopAutoRecognition();
+            else maybeResumeKioskRecognition();
+        });
+        window.addEventListener('pagehide', function () { stopAutoRecognition(); });
+        // Saat halaman dimuat, tab Mesin Absen HP default aktif → buka kamera
+        measureKioskOffset();
+        ensureKioskCamera();     // busy langsung = true → tombol tetap tersembunyi
+        syncKioskCameraButton(); // cek ulang setelah auto-open mulai/menunggu
+        initManualToggle();
+        // Ukur ulang (debounce) saat orientasi/resize/keyboard/browser-chrome berubah
+        window.addEventListener('resize', function () {
+            scheduleKioskMeasure();
+            syncKioskCameraButton();
+        });
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(scheduleKioskMeasure).catch(function () {});
+        }
+    }
+
+    async function openCamera(video, btnToShow, silent) {
+        // silent=true: dipakai auto-start — fallback ditulis ke box #hasil-scan
+        //           (non-blocking). silent=false/falsey: behavior lama (alert).
+        const failBox = silent ? document.getElementById('hasil-scan') : null;
+        const notify = function (msg) {
+            if (failBox) {
+                failBox.style.display = 'block';
+                failBox.className = 'alert alert-warning';
+                failBox.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i> ' + msg;
+            } else {
+                alert(msg);
+            }
+        };
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            notify('Browser HP tidak mendukung kamera. Pakai Chrome Android terbaru.');
+            return false;
+        }
+        if (!window.isSecureContext) {
+            notify('Kamera HP diblokir karena alamat masih HTTP (tidak aman).\n\nSolusi: buka via HTTPS atau via localhost.\nContoh: https://IP-server:3000 (perlu sertifikat) atau pakai tunnel ngrok/cloudflared.\n\nDi laptop localhost tetap bisa karena dianggap aman.');
+            return false;
+        }
+        stopStream(video);
+        video.style.display = 'block';
+        video.muted = true;
+        video.playsInline = true;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            });
+            video.srcObject = stream;
+            // Jika stream tiba-tiba berhenti, tampilkan tombol "Coba Buka Kamera".
+            try {
+                stream.getVideoTracks().forEach(function (t) {
+                    t.addEventListener('ended', function () {
+                        if (video.id === 'video-preview') syncKioskCameraButton();
+                    });
+                });
+            } catch (e) {}
+            await video.play().catch(() => {});
+            if (btnToShow) btnToShow.style.display = 'inline-block';
+            if (video.id === 'video-preview') setScanLive(true);
+            if (failBox) { failBox.style.display = 'none'; failBox.className = 'alert alert-info'; }
+            // Bersihkan pesan fallback/error lama dari auto-start ketika kamera
+            // berhasil dibuka lewat tombol manual (retry sukses).
+            const kioskBox = video.id === 'video-preview' ? document.getElementById('hasil-scan') : null;
+            if (kioskBox) { kioskBox.style.display = 'none'; kioskBox.className = 'alert alert-info'; }
+            return true;
+        } catch (err) {
+            console.error('getUserMedia gagal:', err);
+            let msg = err.message || err.name;
+            if (err.name === 'NotAllowedError' || err.name === 'SecurityError') msg = 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser HP (ikon gembok/address bar), lalu reload.';
+            else if (err.name === 'NotFoundError' || err.name === 'OverconstrainedError') msg = 'Kamera depan tidak ditemukan di HP ini. Coba browser lain / HP lain.';
+            else if (err.name === 'NotReadableError') msg = 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera lain lalu coba lagi.';
+            else if (err.name === 'NotSupportedError') msg = 'Kamera butuh HTTPS. Buka situs via https:// bukan http://';
+            notify('Gagal membuka kamera: ' + msg);
+            if (video.id === 'video-preview') setScanLive(false);
+            if (failBox) video.style.display = 'none';
+            return false;
+        }
+    }
+
+    let regLiveTimer = null;
+
+    function startRegCamera() {
+        const video = document.getElementById('reg-video-preview');
+        openCamera(video, document.getElementById('btn-snap-face')).then(ok => {
+            if (ok) startRegLive();
+        });
+    }
+
+    function stopRegLive() {
+        if (regLiveTimer) { clearInterval(regLiveTimer); regLiveTimer = null; }
+    }
+
+    // Deteksi live tiap 800ms: kasih tahu user kapan wajah sudah "terkunci"
+    function startRegLive() {
+        stopRegLive();
+        const video = document.getElementById('reg-video-preview');
+        const status = document.getElementById('reg-face-status');
+        regLiveTimer = setInterval(async () => {
+            if (!video.srcObject || !faceModelsLoaded || typeof faceapi === 'undefined') return;
+            if (!video.videoWidth) return;
+            try {
+                const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 }));
+                if (d) {
+                    const w = Math.round(d.box.width), h = Math.round(d.box.height);
+                    const frac = (d.box.width * d.box.height) / (video.videoWidth * video.videoHeight);
+                    let saran = '';
+                    if (frac < 0.08) saran = ' — MAJU lebih dekat';
+                    else if (frac > 0.6) saran = ' — sedikit MUNDUR';
+                    else saran = ' — BAGUS, klik Ambil!';
+                    if (status && !regDescriptor) { status.className = 'small mt-1 text-primary'; status.innerText = 'Live: wajah terkunci skor ' + d.score.toFixed(2) + ' (' + w + 'x' + h + ')' + saran; }
+                } else {
+                    if (status && !regDescriptor) { status.className = 'small mt-1 text-muted'; status.innerText = 'Live: wajah belum terlihat — hadap lurus, terang, dekat.'; }
+                }
+            } catch (e) {}
+        }, 800);
+    }
+
+    async function captureRegFace() {
+        const video = document.getElementById('reg-video-preview');
+        const canvas = document.getElementById('reg-canvas-capture');
+        const status = document.getElementById('reg-face-status');
+        if (!video.srcObject) { alert('Buka kamera dulu!'); return; }
+        if (typeof faceapi === 'undefined') { alert('Library face-api belum termuat, cek internet lalu refresh.'); return; }
+        if (!faceModelsLoaded) { alert('Model wajah masih memuat (badge atas belum hijau). Tunggu 5-10 detik lalu coba lagi.'); if (status) status.innerText = 'Model belum siap, tunggu badge hijau.'; return; }
+        await waitVideoReady(video);
+        if (!video.videoWidth) { alert('Kamera belum siap, tunggu 2 detik lalu coba lagi.'); return; }
+        const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
+        canvas.width = vw;
+        canvas.height = vh;
+        canvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+        regPhotoData = canvas.toDataURL('image/jpeg', 0.8);
+
+        const imgResult = document.getElementById('reg-img-result');
+        imgResult.src = regPhotoData;
+        imgResult.style.display = 'block';
+        if (status) { status.className = 'small mt-1 text-primary'; status.innerText = 'Mengekstrak (mencoba 6 frame)...'; }
+        rlog('foto ' + vw + 'x' + vh + ', mulai ekstrak 6x...');
+        try {
+            let desc = null;
+            for (let attempt = 1; attempt <= 6; attempt++) {
+                // ambil frame FRESH tiap percobaan (kedip/gerak bikin 1 frame gagal)
+                canvas.getContext('2d').drawImage(video, 0, 0, vw, vh);
+                regPhotoData = canvas.toDataURL('image/jpeg', 0.85);
+                imgResult.src = regPhotoData;
+                rlog('percobaan ' + attempt + '/6...');
+                desc = await detectDescriptor(canvas, 'coba' + attempt);
+                if (desc) { rlog('BERHASIL di percobaan ' + attempt); break; }
+                await new Promise(r => setTimeout(r, 350));
+            }
+            if (!desc) desc = await getDescriptorFromVideo(video);
+            if (!desc) {
+                regDescriptor = null;
+                if (status) { status.className = 'small mt-1 text-danger'; status.innerText = 'Gagal 6x. Pastikan: 1) wajah penuhi 1/3 layar 2) cahaya depan (bukan belakang) 3) HP dipegang stabil 4) lepas masker. Lihat status Live di atas.'; }
+                alert('Gagal ekstrak setelah 6x percobaan. Cek status Live: tunggu sampai "BAGUS, klik Ambil!" baru klik.');
+                return;
+            }
+            regDescriptor = Array.from(desc);
+            stopRegLive();
+            if (status) { status.className = 'small mt-1 text-success'; status.innerText = 'Ciri wajah OK (' + regDescriptor.length + ' titik), siap disimpan. Klik Simpan!'; }
+        } catch (e) { console.error(e); regDescriptor = null; if (status) status.innerText = 'Gagal ekstrak wajah: ' + e.message; }
+    }
+
+    function tickClock() {
+        const now = new Date();
+        const timeEl = document.getElementById('current-time');
+        const dateEl = document.getElementById('today-date-str');
+        if (timeEl) timeEl.innerText = now.toLocaleTimeString('id-ID');
+        if (dateEl) dateEl.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    loadAllData();
+    initAutoKioskCamera();
+
+    function loadAllData() {
+        loadPabrik();
+        loadKaryawan();
+        loadHariIni();
+        loadLaporan();
+    }
+
+    function startCamera() {
+        // Fallback/retry: kamera dibuka manual, scanning tetap otomatis.
+        // silent=true agar pesan kegagalan non-blocking di box #hasil-scan.
+        // btnToShow=null: tombol "Scan & Kenali Wajah" tidak dimunculkan
+        // (alur otomatis — tidak perlu klik scan manual).
+        const video = document.getElementById('video-preview');
+        openCamera(video, null, true).then(ok => {
+            if (ok) {
+                applyCameraAspect(video);
+                startAutoRecognition();
+            }
+            syncKioskCameraButton();
+        });
+    }
+
+    function capturePhoto() {
+        const video = document.getElementById('video-preview');
+        const canvas = document.getElementById('canvas-capture');
+        if (video.srcObject) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            capturedPhotoData = canvas.toDataURL('image/jpeg', 0.7);
+            
+            const imgResult = document.getElementById('img-result');
+            imgResult.src = capturedPhotoData;
+            imgResult.style.display = 'block';
+        }
+    }
+
+    function loadPabrik() {
+        fetch('/api/pabrik')
+            .then(res => res.json())
+            .then(data => {
+                let select = document.getElementById('k-pabrik');
+                if(select) select.innerHTML = '<option value="">-- Pilih Pabrik --</option>';
+                let html = '';
+                data.forEach(p => {
+                    if(select) select.innerHTML += `<option value="${escHtml(p.id)}">${escHtml(p.nama_pabrik)}</option>`;
+                    html += `<tr><td>${escHtml(p.nama_pabrik)}</td><td>${escHtml(p.lokasi) || '-'}</td></tr>`;
+                });
+                const tablePabrik = document.getElementById('table-pabrik');
+                if(tablePabrik) tablePabrik.innerHTML = html || '<tr><td colspan="2"><div class="empty-state"><i class="fa-solid fa-industry"></i>Belum ada pabrik</div></td></tr>';
+            });
+    }
+
+    function loadKaryawan() {
+        fetch('/api/karyawan')
+            .then(res => res.json())
+            .then(data => {
+                let select = document.getElementById('select-karyawan');
+                if(select) select.innerHTML = '<option value="">-- Pilih Nama Karyawan Manual --</option>';
+                let existing = document.getElementById('k-existing');
+                if(existing) existing.innerHTML = '<option value="">-- Pilih karyawan lama --</option>';
+                let html = '';
+                data.forEach(k => {
+                    if(select) select.innerHTML += `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`;
+                    if(existing) existing.innerHTML += `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`;
+                    const faceBadge = k.has_face
+                        ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> Terdaftar</span>'
+                        : '<span class="badge bg-secondary"><i class="fa-solid fa-circle-minus"></i> Belum</span>';
+                    html += `<tr>
+                        <td>${faceBadge}</td>
+                        <td><code>${escHtml(k.id)}</code></td>
+                        <td><strong>${escHtml(k.nama)}</strong></td>
+                        <td>${escHtml(k.posisi) || '-'}</td>
+                        <td>${escHtml(k.nama_pabrik) || '-'}</td>
+                    </tr>`;
+                });
+                const tableKaryawan = document.getElementById('table-karyawan');
+                if(tableKaryawan) tableKaryawan.innerHTML = html || '<tr><td colspan="5"><div class="empty-state"><i class="fa-regular fa-user"></i>Belum ada karyawan</div></td></tr>';
+                loadFaceDB();
+            })
+            .catch(err => console.error("Error loading karyawan:", err));
+    }
+
+    // Tampilan saja: batasi baris per render agar HP tidak berat (956 karyawan)
+    const ATT_STEP = 30;
+    let attShown = ATT_STEP;
+    let attRowsCache = [];
+
+    // Ringkasan "Absensi Hari Ini" dari cache yang SUDAH ADA (attRowsCache).
+    // X = jumlah sudah absen, Y = total karyawan — tanpa request API baru.
+    function getAttSummary(rows) {
+        const r = rows || attRowsCache || [];
+        let sudah = 0;
+        r.forEach(x => { if (x.jam_masuk || x.jam_pulang) sudah++; });
+        const total = r.length;
+        return { total: total, sudahAbsen: sudah, belum: Math.max(total - sudah, 0) };
+    }
+
+    // Label tombol mobile: "Absensi Hari Ini · X/Y"
+    function refreshAttSummaryButton() {
+        const el = document.getElementById('att-summary-count');
+        if (!el) return;
+        const c = getAttSummary();
+        el.textContent = c.sudahAbsen + '/' + c.total;
+    }
+
+    function loadHariIni() {
+        fetch('/api/absensi/hari-ini')
+            .then(res => res.json())
+            .then(res => {
+                const rows = res.data || [];
+                attRowsCache = rows;
+                attShown = ATT_STEP;
+                const counts = getAttSummary(rows);
+                const summary = document.getElementById('att-summary');
+                if (summary) summary.innerText = counts.total + ' karyawan · ' + counts.sudahAbsen + ' sudah absen · ' + counts.belum + ' belum absen';
+                refreshAttSummaryButton();
+                renderHariIni(rows);
+            })
+            .catch(err => {
+                console.error("Error loading hari ini:", err);
+                const tableHariIni = document.getElementById('table-hari-ini');
+                if (tableHariIni) tableHariIni.innerHTML = '<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i>Gagal memuat data absensi</div></td></tr>';
+            });
+    }
+
+    function renderHariIni(rows) {
+        const visible = rows.slice(0, attShown);
+        let html = '';
+        visible.forEach(row => {
+                    const foto = row.foto_masuk
+                        ? '<span class="att-avatar"><img src="' + escHtml(row.foto_masuk) + '" alt=""></span>'
+                        : '<span class="att-avatar">' + escHtml(initials(row.nama)) + '</span>';
+
+                    const meta = [];
+                    if (row.karyawan_id) meta.push('ID ' + escHtml(row.karyawan_id));
+                    if (row.posisi) meta.push(escHtml(row.posisi));
+                    if (row.nama_pabrik) meta.push(escHtml(row.nama_pabrik));
+
+                    const jamMasuk = row.jam_masuk
+                        ? '<span class="time-pill time-pill--in"><i class="fa-solid fa-arrow-right-to-bracket"></i>' + escHtml(row.jam_masuk) + '</span>'
+                        : '<span class="time-pill time-pill--none">Belum</span>';
+
+                    const jamPulang = row.jam_pulang
+                        ? '<span class="time-pill time-pill--out"><i class="fa-solid fa-arrow-right-from-bracket"></i>' + escHtml(row.jam_pulang) + '</span>'
+                        : '<span class="time-pill time-pill--none">Belum</span>';
+
+                    let status;
+                    if (row.jam_pulang) status = '<span class="status-chip status-chip--selesai"><i class="fa-solid fa-flag-checkered"></i> Selesai</span>';
+                    else if (row.jam_masuk) status = '<span class="status-chip status-chip--hadir"><i class="fa-solid fa-circle-check"></i> Hadir</span>';
+                    else status = '<span class="status-chip status-chip--belum"><i class="fa-regular fa-clock"></i> Belum absen</span>';
+
+                    html += '<tr>' +
+                        '<td class="att-identity"><div class="att-user">' + foto +
+                            '<div class="att-user__text"><div class="att-name">' + escHtml(row.nama) + '</div>' +
+                            '<div class="att-meta">' + (meta.join(' · ') || '–') + '</div></div></div></td>' +
+                        '<td class="att-time num" data-label="Masuk">' + jamMasuk + '</td>' +
+                        '<td class="att-time num" data-label="Pulang">' + jamPulang + '</td>' +
+                        '<td class="att-status">' + status + '</td>' +
+                        '</tr>';
+        });
+
+        if (!html) html = '<tr><td colspan="4"><div class="empty-state"><i class="fa-regular fa-calendar-xmark"></i>Belum ada data karyawan</div></td></tr>';
+
+        if (attShown < rows.length) {
+            html += '<tr id="att-more-row"><td colspan="4">' +
+                '<button type="button" class="btn-ui btn-ui--block btn-ui--sm" id="att-more-btn" onclick="attMore()">' +
+                '<i class="fa-solid fa-chevron-down"></i> Tampilkan ' + Math.min(ATT_STEP, rows.length - attShown) + ' lagi · sisa ' + (rows.length - attShown) +
+                '</button></td></tr>';
+        }
+
+        const tableHariIni = document.getElementById('table-hari-ini');
+        if (tableHariIni) tableHariIni.innerHTML = html;
+        // Renderer sama juga dipakai di dalam modal mobile (data tidak diduplikasi —
+        // kedua tbody hanya menampilkan cache yang sama).
+        const tableHariIniModal = document.getElementById('table-hari-ini-modal');
+        if (tableHariIniModal) tableHariIniModal.innerHTML = html;
+    }
+
+    function attMore() {
+        attShown += ATT_STEP;
+        renderHariIni(attRowsCache);
+    }
+
+    // Buka daftar Absensi Hari Ini di modal full-screen (mobile).
+    // Data & pagination LAMA dipakai kembali: attRowsCache, renderHariIni, attMore.
+    function openAttModal() {
+        const summaryEl = document.getElementById('att-modal-summary');
+        if (summaryEl) {
+            const c = getAttSummary();
+            summaryEl.textContent = c.sudahAbsen + ' sudah absen · ' + c.belum + ' belum';
+        }
+        renderHariIni(attRowsCache); // modal tbody ikut ter-render
+        const modalEl = document.getElementById('att-modal');
+        if (modalEl && window.bootstrap) {
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+    }
+
+    function loadLaporan() {
+        fetch('/api/absensi/laporan')
+            .then(res => res.json())
+            .then(data => {
+                let html = '';
+                (data || []).forEach(row => {
+                    html += `<tr>
+                        <td class="num">${escHtml(row.tanggal)}</td>
+                        <td><strong>${escHtml(row.nama)}</strong></td>
+                        <td>${escHtml(row.posisi) || '-'}</td>
+                        <td>${escHtml(row.nama_pabrik) || '-'}</td>
+                        <td class="num">${escHtml(row.jam_masuk) || '-'}</td>
+                        <td class="num">${escHtml(row.jam_pulang) || '-'}</td>
+                    </tr>`;
+                });
+                const tableLaporan = document.getElementById('table-laporan');
+                if(tableLaporan) tableLaporan.innerHTML = html || '<tr><td colspan="6"><div class="empty-state"><i class="fa-regular fa-file-lines"></i>Belum ada laporan</div></td></tr>';
+            })
+            .catch(err => console.error("Error loading laporan:", err));
+    }
+
+    function submitAbsen(aksi) {
+        // Clear inactivity timeout begitu MASUK/PULANG dilakukan
+        // (jangan biarkan auto-reset 15 detik membatalkan saat proses berjalan).
+        clearRecognitionLockTimer();
+        const manualId = document.getElementById('select-karyawan').value;
+        const karyawan_id = matchedKaryawan ? matchedKaryawan.id : manualId;
+        const alertBox = document.getElementById('alert-box');
+
+        if (!karyawan_id) {
+            alertBox.innerHTML = '<div class="alert alert-warning"><i class="fa-solid fa-circle-info me-1"></i> Scan wajah dulu atau pilih nama manual!</div>';
+            return;
+        }
+
+        if (!capturedPhotoData) {
+            alertBox.innerHTML = '<div class="alert alert-warning"><i class="fa-solid fa-camera me-1"></i> Silakan buka kamera dan ambil foto wajah (verifikasi) terlebih dahulu!</div>';
+            return;
+        }
+
+        fetch('/api/absensi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ karyawan_id, aksi, foto: capturedPhotoData })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            const icon = aksi === 'masuk' ? 'fa-door-open' : 'fa-door-closed';
+            alertBox.innerHTML = `<div class="alert alert-success"><i class="fa-solid ${icon} me-1"></i> ${escHtml(data.message)}</div>`;
+            document.getElementById('img-result').style.display = 'none';
+            document.getElementById('btn-verify-face').style.display = 'none';
+            const hs = document.getElementById('hasil-scan');
+            if (hs) hs.style.display = 'none';
+            capturedPhotoData = "";
+            // Reset identity + visual recognition (clear matched, Nama/NIK, Scan Ulang).
+            resetRecognitionState();
+            loadAllData();
+            // Kamera tetap aktif jika memungkinkan → auto-recognition hidup lagi
+            // untuk karyawan berikutnya (tanpa perlu klik Scan).
+            const video = document.getElementById('video-preview');
+            if (video) video.style.display = 'block';
+            if (kioskCameraActive()) {
+                setScanLive(true);
+                startAutoRecognition();
+            } else {
+                // Stream mati / belum terbuka — buka lagi otomatis.
+                ensureKioskCamera();
+            }
+            syncKioskCameraButton();
+        })
+        .catch(err => {
+            alertBox.innerHTML = '<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> ' + escHtml(err.message) + '</div>';
+            // Submit gagal → identity tetap terkunci, tapi aktifkan auto-reset 15 detik
+            // supaya tidak "nyangkut" selamanya jika user tidak melakukan apa-apa.
+            if (identityLocked && !recognitionLockTimer) {
+                recognitionLockTimer = setTimeout(onRecognitionInactivity, RECOGNITION_LOCK_TIMEOUT);
+            }
+        });
+    }
+
+    async function tambahKaryawan(e) {
+        e.preventDefault();
+        const existingId = document.getElementById('k-existing').value;
+        const nama = document.getElementById('k-nama').value.trim();
+
+        if (!regPhotoData) { alert('Ambil foto wajah dulu!'); return; }
+        if (!regDescriptor) { alert('Ciri wajah belum terekstrak! Ulangi ambil foto dengan wajah jelas menghadap kamera.'); return; }
+
+        try {
+            let res;
+            if (existingId) {
+                res = await fetch('/api/karyawan/' + existingId + '/face', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ foto_wajah: regPhotoData, face_descriptor: regDescriptor })
+                });
+            } else {
+                if (!nama) { alert('Isi nama karyawan baru atau pilih karyawan lama!'); return; }
+                res = await fetch('/api/karyawan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        nama,
+                        posisi: document.getElementById('k-posisi').value,
+                        pabrik_id: document.getElementById('k-pabrik').value,
+                        foto_wajah: regPhotoData,
+                        face_descriptor: regDescriptor
+                    })
+                });
+            }
+            const resJson = await res.json();
+            if (!res.ok) throw new Error(resJson.error || 'Gagal simpan');
+            e.target.reset();
+            document.getElementById('k-existing').value = '';
+            regPhotoData = "";
+            regDescriptor = null;
+            document.getElementById('reg-img-result').style.display = 'none';
+            document.getElementById('reg-face-status').innerText = '';
+            const regVideo = document.getElementById('reg-video-preview');
+            if(regVideo.srcObject) regVideo.srcObject.getTracks().forEach(t => t.stop());
+            regVideo.style.display = 'none';
+            document.getElementById('btn-snap-face').style.display = 'none';
+            loadAllData();
+            alert('Wajah berhasil didaftarkan! Sekarang bisa scan otomatis.');
+        } catch (err) { alert(err.message); }
+    }
+
+    function tambahPabrik(e) {
+        e.preventDefault();
+        alert('Data pabrik dibaca langsung dari database MySQL (tabel tpabrik).');
+    }
+</script>
+</body>
+</html>

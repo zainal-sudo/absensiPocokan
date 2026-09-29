@@ -1,0 +1,1150 @@
+/* ==========================================================================
+   Absensi Pocokan — Design System (frontend only, no build step)
+   Load setelah Bootstrap 5.3 sehingga override ini menang.
+   ========================================================================== */
+
+:root {
+    /* Brand — navy / blue profesional */
+    --brand-900: #0b1f3a;
+    --brand-800: #102b4d;
+    --brand-700: #163d6b;
+    --brand-600: #1a5490;
+    --brand-500: #2563a8;
+    --brand-100: #dbe8f7;
+    --brand-50:  #eef4fb;
+
+    /* Semantic */
+    --success-700: #157347;
+    --success-500: #16a34a;
+    --success-50:  #e8f6ee;
+    --success-200: #bfe5cd;
+
+    --danger-700:  #b32020;
+    --danger-500:  #dc2626;
+    --danger-50:   #fdeded;
+    --danger-200:  #f6c9c9;
+
+    --warn-700:    #9a5b06;
+    --warn-500:    #d97706;
+    --warn-50:     #fdf4e3;
+    --warn-200:    #f3ddb0;
+
+    /* Neutral */
+    --gray-900: #14202f;
+    --gray-700: #35435a;
+    --gray-600: #4d5b73;
+    --gray-500: #6b788c;
+    --gray-400: #98a2b3;
+    --gray-300: #c9d1de;
+    --gray-200: #e3e8f0;
+    --gray-100: #eef1f6;
+    --gray-50:  #f5f7fa;
+
+    /* Shape & elevation */
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 20px;
+    --r-pill: 999px;
+    --shadow-xs: 0 1px 2px rgba(16, 24, 40, .05);
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
+    --shadow-md: 0 4px 12px rgba(16, 24, 40, .07);
+    --tap: 48px;
+
+    --page-max: 1180px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---------- Base ---------- */
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    background: var(--gray-50);
+    color: var(--gray-900);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5 { letter-spacing: -0.015em; color: var(--gray-900); }
+
+code {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    padding: .1em .4em;
+    border-radius: 6px;
+    font-size: .9em;
+}
+
+.app-shell {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 18px 16px 56px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: var(--brand-900);
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.app-header__inner {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: 10px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+    text-decoration: none;
+    color: #fff;
+}
+
+.app-brand__mark {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, .10);
+    border: 1px solid rgba(255, 255, 255, .14);
+    font-size: 17px;
+    color: #fff;
+}
+
+.app-brand__text { min-width: 0; }
+
+.app-brand__title {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-brand__sub {
+    margin: 1px 0 0;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, .62);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-header__spacer { flex: 1 1 auto; }
+
+.app-clock {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+    padding: 5px 12px;
+    border-radius: var(--r-md);
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .12);
+}
+
+.app-clock__label {
+    font-size: 9.5px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .58);
+    font-weight: 600;
+}
+
+.app-clock__time {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+}
+
+/* ==========================================================================
+   NAVIGATION — segmented rail (horizontal scroll di mobile)
+  逻辑 tetap Bootstrap pills (data-bs-toggle="pill")
+   ========================================================================== */
+.nav-rail {
+    display: flex;
+    gap: 6px;
+    padding: 5px;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xs);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 18px;
+}
+
+.nav-rail::-webkit-scrollbar { display: none; }
+
+.nav-rail .nav-item { flex: 0 0 auto; }
+
+.nav-rail .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: var(--r-md);
+    color: var(--gray-600);
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+
+.nav-rail .nav-link i { font-size: 14px; opacity: .8; }
+
+/* Label nav: pendek (HP) vs panjang (desktop) */
+.nav-label-short { display: none; }
+.nav-label-long { display: inline; }
+
+.nav-rail .nav-link:hover { color: var(--brand-600); background: var(--gray-50); }
+
+.nav-rail .nav-link.active {
+    color: #fff;
+    background: var(--brand-600);
+    border-color: var(--brand-600);
+    box-shadow: 0 1px 2px rgba(26, 84, 144, .25);
+}
+
+.nav-rail .nav-link.active i { opacity: 1; }
+
+.nav-rail .nav-link:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+
+/* ==========================================================================
+   CARD SHELL (dipakai bersama oleh semua tab)
+   ========================================================================== */
+.card-kiosk {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 18px;
+    margin-bottom: 16px;
+}
+
+.card-kiosk:last-child { margin-bottom: 0; }
+
+.card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.card-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.card-sub {
+    margin: 3px 0 0;
+    font-size: 12.5px;
+    color: var(--gray-500);
+    font-weight: 500;
+}
+
+.card-title--lg { font-size: 20px; }
+
+/* ==========================================================================
+   KIOSK — Absensi Kehadiran
+   ========================================================================== */
+.kiosk { padding: 20px 16px 18px; }
+
+.kiosk__date {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-500);
+}
+
+.kiosk__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 16px;
+}
+
+/* --- Scan area --- */
+.scan {
+    border: 1.5px dashed var(--gray-300);
+    border-radius: var(--r-lg);
+    background: linear-gradient(180deg, #fbfcfe 0%, var(--gray-50) 100%);
+    padding: 22px 16px 20px;
+    text-align: center;
+}
+
+.scan--live { border-style: solid; border-color: var(--brand-100); }
+
+.scan__icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 12px;
+    border-radius: var(--r-lg);
+    display: grid;
+    place-items: center;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow-sm);
+    color: var(--brand-600);
+    font-size: 24px;
+}
+
+.scan__title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.scan__hint {
+    margin: 5px 0 16px;
+    font-size: 13px;
+    color: var(--gray-500);
+    max-width: 30ch;
+    margin-inline: auto;
+}
+
+.scan__actions { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+/*
+ * Preview kamera live — menerapkan:
+ *  - mirror horizontal (transform scaleX(-1)) agar terasa seperti bercermin.
+ *    INI HANYA VISUAL pada elemen preview. Canvas capture, face-api,
+ *    descriptor, foto yang dikirim ke backend TIDAK terpengaruh.
+ *  - aspect-ratio mengikuti stream asli (di-set via JS setelah loadedmetadata).
+ *  - object-fit: contain + height:auto agar tidak stretch/crop.
+ */
+#video-preview,
+#reg-video-preview {
+    display: none;
+    width: 100%;
+    max-width: 560px;
+    height: auto;
+    margin: 14px auto 0;
+    border-radius: var(--r-md);
+    background: #000;
+    border: 1px solid var(--gray-200);
+    object-fit: contain;
+    transform: scaleX(-1);
+    -webkit-transform: scaleX(-1);
+}
+
+#canvas-capture { display: none; }
+
+#img-result,
+#reg-img-result {
+    display: none;
+    max-height: 150px;
+    width: auto;
+    border-radius: var(--r-md);
+    border: 1px solid var(--gray-200);
+    margin: 14px auto 0;
+}
+
+#hasil-scan { margin: 14px 0 0; text-align: left; }
+
+/* Baris "tampilkan lagi" — di mobile tetap polos, bukan kartu */
+tr#att-more-row {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    margin-bottom: 0 !important;
+    padding: 4px 0 0 !important;
+}
+
+/* --- Manual fallback (secondary) --- */
+.manual {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--gray-100);
+}
+
+.manual__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.manual__head i { color: var(--gray-400); font-size: 12px; }
+
+.manual__label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--gray-500);
+}
+
+.manual__hint {
+    margin: 0 0 10px;
+    font-size: 11.5px;
+    color: var(--gray-400);
+}
+
+/* Di desktop dropdown manual langsung tampil; tombol collapse tidak dipakai */
+.manual__toggle { display: none; }
+.manual__body { display: block; }
+
+/* --- Action buttons --- */
+.actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.btn-att {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    color: #fff;
+    cursor: pointer;
+    transition: transform .1s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+.btn-att i { font-size: 15px; }
+.btn-att:active { transform: translateY(1px); }
+.btn-att:focus-visible { outline: 2px solid var(--gray-900); outline-offset: 2px; }
+
+.btn-att--masuk {
+    background: var(--success-500);
+    box-shadow: 0 1px 2px rgba(21, 115, 71, .25);
+}
+.btn-att--masuk:hover { background: var(--success-700); }
+
+.btn-att--pulang {
+    background: var(--danger-500);
+    box-shadow: 0 1px 2px rgba(179, 32, 32, .22);
+}
+.btn-att--pulang:hover { background: var(--danger-700); }
+
+.btn-att:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+/* --- Baris aksi sekunder kiosk: Scan Ulang | Pilih manual (desktop: bertumpuk) --- */
+.kiosk-secondary { margin-top: 14px; }
+.kiosk-secondary__scan { margin-top: 12px; }
+
+/* Tombol "Absensi Hari Ini · X/Y" — khusus mobile (card daftar utuh di desktop) */
+.att-summary-btn {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 12px;
+    margin-top: 10px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-md);
+    background: var(--gray-50);
+    color: var(--gray-800);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease;
+}
+.att-summary-btn:hover { background: var(--gray-100); border-color: var(--gray-300); }
+.att-summary-btn__count {
+    margin-left: auto;
+    font-weight: 800;
+    color: var(--brand-600);
+    font-variant-numeric: tabular-nums;
+}
+.att-summary-btn__chev { color: var(--gray-400); font-size: 12px; }
+
+/* ==========================================================================
+   MODAL Absensi Hari Ini (mobile full-screen) — renderer lama direuse
+   ========================================================================== */
+.modal-sub { margin: 0; font-size: 12.5px; font-weight: 500; color: var(--gray-500); }
+#att-modal .modal-content { border: 0; border-radius: var(--r-lg); overflow: hidden; }
+#att-modal .modal-header { align-items: baseline; flex-wrap: wrap; gap: 2px 8px; border-bottom: 1px solid var(--gray-100); }
+#att-modal .modal-body { padding: 12px 12px 6px; }
+#att-modal .modal-body .att-scroll { border: 0; border-radius: 0; overflow: visible; max-height: none; }
+#att-modal .modal-footer { padding: 12px 14px; }
+
+/* --- Shared controls --- */
+.btn-ui {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--tap);
+    padding: 10px 18px;
+    border-radius: var(--r-md);
+    border: 1px solid var(--gray-200);
+    background: #fff;
+    color: var(--gray-700);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.btn-ui:hover { background: var(--gray-50); color: var(--gray-900); }
+.btn-ui:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+
+.btn-ui--primary {
+    background: var(--brand-600);
+    border-color: var(--brand-600);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(26, 84, 144, .25);
+}
+.btn-ui--primary:hover { background: var(--brand-700); border-color: var(--brand-700); color: #fff; }
+
+.btn-ui--block { width: 100%; }
+.btn-ui--sm { min-height: 40px; font-size: 13px; padding: 8px 14px; }
+
+.form-label-ui {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.form-control-ui,
+.form-select-ui {
+    display: block;
+    width: 100%;
+    min-height: var(--tap);
+    padding: 11px 14px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--gray-900);
+    background-color: #fff;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--r-md);
+    box-shadow: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.form-select-ui {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%236b788c' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px 8px;
+    padding-right: 38px;
+}
+
+.form-control-ui:focus,
+.form-select-ui:focus {
+    outline: none;
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px var(--brand-100);
+}
+
+.field { margin-bottom: 14px; }
+
+/* ==========================================================================
+   BADGES / CHIPS
+   JS menulis className = 'badge bg-*' → variant di-override di bawah
+   ========================================================================== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--r-pill);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: .005em;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.badge i { font-size: 10.5px; }
+
+.badge.bg-success {
+    background-color: var(--success-50) !important;
+    color: var(--success-700) !important;
+    border-color: var(--success-200) !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-50) !important;
+    color: var(--danger-700) !important;
+    border-color: var(--danger-200) !important;
+}
+
+.badge.bg-warning,
+.badge.bg-info {
+    background-color: var(--warn-50) !important;
+    color: var(--warn-700) !important;
+    border-color: var(--warn-200) !important;
+}
+
+.badge.bg-secondary {
+    background-color: var(--gray-100) !important;
+    color: var(--gray-600) !important;
+    border-color: var(--gray-200) !important;
+}
+
+/* Alert — dipakai oleh #alert-box & #hasil-scan (class ditulis dari JS) */
+.alert {
+    border: 1px solid transparent;
+    border-left-width: 3px;
+    border-radius: var(--r-md);
+    font-size: 13.5px;
+    line-height: 1.45;
+    padding: 11px 14px;
+}
+
+.alert-success { background-color: var(--success-50) !important; border-color: var(--success-200) !important; border-left-color: var(--success-500) !important; color: var(--success-700); }
+.alert-danger  { background-color: var(--danger-50) !important;  border-color: var(--danger-200) !important;  border-left-color: var(--danger-500) !important;  color: var(--danger-700); }
+.alert-warning { background-color: var(--warn-50) !important;    border-color: var(--warn-200) !important;    border-left-color: var(--warn-500) !important;    color: var(--warn-700); }
+.alert-info    { background-color: var(--brand-50) !important;   border-color: var(--brand-100) !important;   border-left-color: var(--brand-500) !important;   color: var(--brand-700); }
+
+.alert strong { font-weight: 700; }
+.alert code { background: rgba(255, 255, 255, .7); }
+
+/* --- Hasil auto-recognition (identity lock) --- */
+.recog-result {
+    margin-top: 14px;
+    padding: 16px 14px;
+    border-radius: var(--r-md);
+    background: var(--success-50);
+    border: 1px solid var(--success-200);
+    border-left: 3px solid var(--success-500);
+    text-align: center;
+}
+.recog-result__ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--success-700);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .02em;
+}
+.recog-result__name {
+    margin-top: 6px;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--gray-900);
+    letter-spacing: -0.01em;
+}
+.recog-result__nik {
+    margin-top: 3px;
+    font-size: 13.5px;
+    color: var(--gray-600);
+}
+
+/* ==========================================================================
+   TABEL
+   ========================================================================== */
+.table-scroll {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--r-md);
+}
+
+.table-ui {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13.5px;
+    color: var(--gray-700);
+    background: #fff;
+}
+
+.table-ui thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--gray-50);
+    color: var(--gray-500);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+}
+
+.table-ui tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: middle;
+}
+
+.table-ui tbody tr:last-child td { border-bottom: 0; }
+.table-ui tbody tr:hover td { background: #fafbfd; }
+
+.table-ui .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* --- Absensi hari ini --- */
+.att-scroll { max-height: 520px; }
+
+.att-avatar {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    display: grid;
+    place-items: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--gray-500);
+    text-transform: uppercase;
+}
+
+.att-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.att-user { display: flex; align-items: center; gap: 11px; min-width: 0; }
+
+.att-user__text { min-width: 0; }
+
+.att-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.att-meta {
+    font-size: 11.5px;
+    color: var(--gray-500);
+    line-height: 1.35;
+    margin-top: 1px;
+    overflow-wrap: anywhere;
+}
+
+.time-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.time-pill--in { background: var(--success-50); color: var(--success-700); border-color: var(--success-200); }
+.time-pill--out { background: var(--danger-50); color: var(--danger-700); border-color: var(--danger-200); }
+.time-pill--none { background: var(--gray-50); color: var(--gray-400); font-weight: 600; border-color: var(--gray-200); }
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--r-pill);
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.status-chip i { font-size: 10px; }
+.status-chip--hadir { background: var(--success-50); color: var(--success-700); border-color: var(--success-200); }
+.status-chip--selesai { background: var(--gray-100); color: var(--gray-600); border-color: var(--gray-200); }
+.status-chip--belum { background: var(--warn-50); color: var(--warn-700); border-color: var(--warn-200); }
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 34px 16px;
+    text-align: center;
+    color: var(--gray-400);
+    font-size: 13.5px;
+    font-weight: 500;
+}
+
+.empty-state i { font-size: 26px; opacity: .5; }
+
+/* ==========================================================================
+   RESPONSIVE — < 768px: tabel berubah menjadi kartu absensi
+   ========================================================================== */
+@media (max-width: 767.98px) {
+    .app-shell { padding-top: 14px; padding-bottom: 0; padding-bottom: calc(0px + env(safe-area-inset-bottom)); }
+
+    /* HEADER + NAV compact supaya kiosk HP fit 100dvh tanpa scroll */
+    .app-header__inner { padding: 7px 12px; gap: 8px; }
+    .app-brand__mark { width: 32px; height: 32px; font-size: 14px; border-radius: 9px; }
+    /* Layout teks brand jadi kolom flex — mencegah anonymous line-box
+       (line-height lompatan) menambah tinggi header di HP */
+    .app-brand__text { display: flex; flex-direction: column; justify-content: center; }
+    .app-brand__title { font-size: 14px; }
+    .app-brand__sub { font-size: 10.5px; }
+    .app-clock { padding: 3px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; font-size: 0; }
+    .app-clock__label { font-size: 8.5px; line-height: 1.3; }
+    .app-clock__time { font-size: 13.5px; line-height: 1.3; }
+
+    /* Navigasi: satu baris compact 4 item (ikon + label pendek) */
+    .nav-rail { gap: 4px; padding: 4px; margin-bottom: 6px; }
+    .nav-rail .nav-item { flex: 1 1 0; min-width: 0; }
+    .nav-rail .nav-link { min-height: 40px; padding: 0 6px; gap: 6px; font-size: 11.5px; justify-content: center; }
+    .nav-rail .nav-link i { font-size: 12.5px; }
+    .nav-label-short { display: inline; }
+    .nav-label-long { display: none; }
+
+    .kiosk { padding: 16px 14px; }
+    .card-kiosk { padding: 15px 13px; }
+    .att-scroll { max-height: none; overflow: visible; border: 0; border-radius: 0; }
+
+    .att-table thead { display: none; }
+    .att-table,
+    .att-table tbody,
+    .att-table tr,
+    .att-table td { display: block; width: 100%; }
+
+    .att-table tr {
+        border: 1px solid var(--gray-200);
+        border-radius: var(--r-md);
+        background: #fff;
+        padding: 13px 13px 12px;
+        margin-bottom: 10px;
+        box-shadow: var(--shadow-xs);
+    }
+
+    .att-table tr:hover td { background: transparent; }
+
+    .att-table td {
+        border: 0 !important;
+        padding: 0;
+        background: transparent !important;
+    }
+
+    /* identitas: lebar penuh, di atas */
+    .att-table td.att-identity { margin-bottom: 12px; }
+    .att-table td.att-identity::before { display: none; }
+
+    /* Masuk & Pulang: 2 kolom berdampingan */
+    .att-table tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 10px;
+        row-gap: 10px;
+    }
+
+    .att-table td.att-identity,
+    .att-table td.att-status { grid-column: 1 / -1; }
+
+    .att-table td.att-time::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--gray-400);
+        margin-bottom: 5px;
+    }
+
+    .att-table td.att-time .time-pill { width: 100%; justify-content: center; }
+    .att-table td.att-status { margin-top: 2px; }
+    .att-table td.att-status::before { display: none; }
+
+    .att-table .empty-state { padding: 26px 8px; }
+
+    .actions { gap: 8px; }
+    .btn-att { min-height: 52px; font-size: 14.5px; letter-spacing: .04em; }
+}
+
+/* ==========================================================================
+   KIOSK MOBILE — area absensi + kamera fit viewport HP (100dvh)
+   Hanya tab Mesin Absen HP (#tab-kiosk), tab lain & desktop tidak diubah.
+   ========================================================================== */
+@media (max-width: 767.98px) {
+    /* Header + nav sudah dibuat compact di blok responsive di atas.
+       Card kiosk = flex column; min-height mengisi sisa viewport setelah
+       header + navigasi. TIDAK ada height fixed — card boleh bertambah
+       tinggi jika konten > viewport (tidak overlap/terpotong).
+       var(--kiosk-offset) diukur via JS (document-relative, stabil saat scroll). */
+    #tab-kiosk .kiosk {
+        display: flex;
+        flex-direction: column;
+        min-height: calc(100vh - var(--kiosk-offset, 150px));
+        min-height: calc(100dvh - var(--kiosk-offset, 150px));
+        padding-top: 12px;
+        padding-bottom: 12px;
+    }
+
+    #tab-kiosk .card-head { margin-bottom: 4px; }
+    #tab-kiosk .card-title--lg { font-size: 17px; }
+    #tab-kiosk .kiosk__date { margin-top: 0; font-size: 11px; }
+
+    #tab-kiosk .kiosk__chips { margin: 3px 0 5px; gap: 5px; }
+    #tab-kiosk .kiosk__chips .badge { padding: 4px 8px; font-size: 10.5px; }
+
+    /* Scan area mengisi sisa tinggi card (kamera mendapat ruang maksimal).
+       position:relative → hasil rekognisi & status jadi overlay di atas kamera. */
+    #tab-kiosk .scan {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        padding: 8px 10px 6px;
+    }
+
+    /* Kamera AKTIF → dekorasi disembunyikan, kamera jadi fokus utama */
+    #tab-kiosk .scan--live .scan__icon,
+    #tab-kiosk .scan--live .scan__title,
+    #tab-kiosk .scan--live .scan__actions { display: none; }
+
+    /* Instruksi ringan ditampilkan sebagai overlay (#hasil-scan), bukan baris penuh */
+    #tab-kiosk .scan--live .scan__hint { display: none; }
+
+    /* Lantai area kamera saat live: preview tetap besar walaupun overlay muncul */
+    #tab-kiosk .scan--live { min-height: min(46dvh, 430px); }
+
+    /* Preview: pertahankan aspect ratio stream asli (via JS aspect-ratio).
+       width/height auto + max-* → skala proporsional, tidak stretch/crop.
+       margin:auto → terpusat. max-height relatif viewport (BUKAN var JS
+       yang dulu bisa menyusut ke 110px): menyisakan ruang untuk komponen
+       compact di bawah kamera (head + chips + MASUK/PULANG + sekunder + tombol daftar). */
+    #tab-kiosk .scan--live #video-preview {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: max(200px, calc(100vh - var(--kiosk-offset, 150px) - 310px));
+        max-height: max(200px, calc(100dvh - var(--kiosk-offset, 150px) - 310px));
+        min-height: 0;
+        margin: auto;
+        object-fit: contain;
+    }
+
+    /* Preview foto kedua (capture untuk recognition) disembunyikan dari UI
+       mobile — elemen/data/function tetap utuh, hanya visual duplikat yang
+       dihilangkan (capturePhoto() & capturedPhotoData masih bekerja). */
+    #tab-kiosk #img-result { display: none !important; }
+
+    /* Status ringan & identitas hasil rekognisi → OVERLAY kecil di dasar
+       kamera. Tidak mengubah ukuran kamera & tidak menambah tinggi halaman. */
+    #tab-kiosk .scan--live #hasil-scan {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 8px;
+        margin: 0;
+        padding: 7px 10px;
+        text-align: center;
+        font-size: 12.5px;
+        z-index: 5;
+        box-shadow: var(--shadow-xs);
+    }
+
+    /* Kartu identitas compact (overlay kecil): ✓ Nama · NIK */
+    #tab-kiosk .scan--live .recog-result {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 8px;
+        margin: 0;
+        padding: 7px 12px;
+        text-align: center;
+        background: rgba(255, 255, 255, .96);
+        border: 1px solid var(--success-200);
+        border-left-width: 3px;
+        border-radius: var(--r-pill);
+        box-shadow: var(--shadow-sm);
+        z-index: 5;
+    }
+    #tab-kiosk .scan--live .recog-result__ok { display: none; }
+    #tab-kiosk .scan--live .recog-result__name {
+        display: inline;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--gray-900);
+        letter-spacing: 0;
+    }
+    #tab-kiosk .scan--live .recog-result__nik {
+        display: inline;
+        margin: 0;
+        font-size: 12px;
+        color: var(--gray-600);
+        white-space: nowrap;
+    }
+    #tab-kiosk .scan--live .recog-result__nik::before {
+        content: '\00b7';
+        margin-right: 7px;
+        color: var(--gray-400);
+    }
+
+    /* Aksi utama: [MASUK] [PULANG] tepat setelah kamera */
+    #tab-kiosk .actions { margin-top: 6px; }
+
+    /* Baris aksi sekunder compact: Scan Ulang | Pilih manual (2 kolom) */
+    #tab-kiosk .kiosk-secondary {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+    }
+    #tab-kiosk .kiosk-secondary__scan {
+        flex: 1 1 45%;
+        min-width: 0;
+        margin: 0;
+    }
+    #tab-kiosk .kiosk-secondary__scan .btn-ui { width: 100%; }
+    #tab-kiosk .kiosk-secondary .manual {
+        flex: 1 1 45%;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+    #tab-kiosk .manual__toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        min-height: 40px;
+        padding: 8px 10px;
+        border: 1px dashed var(--gray-300);
+        border-radius: var(--r-md);
+        background: transparent;
+        color: var(--gray-500);
+        font-size: 12.5px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    #tab-kiosk .manual__toggle i { font-size: 12px; color: var(--gray-400); }
+    #tab-kiosk .manual__toggle:hover { background: var(--gray-50); color: var(--brand-600); }
+    #tab-kiosk .manual__body { display: none; }
+    /* Dropdown manual: panel melayang MEMBUKA KE ATAS di atas baris (aksinya
+       di bawahnya), tidak menambah tinggi card & tidak keluar viewport. */
+    #tab-kiosk .manual__body.is-open {
+        display: block;
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: calc(100% + 6px);
+        z-index: 20;
+        margin: 0;
+        padding: 12px;
+        max-height: min(46dvh, 420px);
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--r-md);
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* Tombol "Absensi Hari Ini · X/Y" menggantikan card daftar panjang di HP */
+    #tab-kiosk .att-summary-btn { display: flex; margin-top: 6px; }
+
+    /* Card daftar Absensi Hari Ini (kolom kanan) disembunyikan di HP —
+       daftarnya dipindah ke modal full-screen; tombol compact di atas. */
+    #tab-kiosk .row > .col-12.col-lg-7 { display: none; }
+
+    /* Pesan sukses/gagal submit = TOAST overlay di atas card (bukan baris di
+       flow) supaya card tidak bertambah tinggi & workflow tetap tanpa scroll. */
+    #tab-kiosk .kiosk { position: relative; }
+    #tab-kiosk #alert-box {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        top: 10px;
+        z-index: 25;
+        margin: 0;
+    }
+}
+
+/* 360px: paling sempit */
+@media (max-width: 379.98px) {
+    .app-shell { padding-left: 12px; padding-right: 12px; }
+    .app-brand__title { font-size: 14.5px; }
+    .app-brand__sub { font-size: 11px; }
+    .app-brand__mark { width: 34px; height: 34px; font-size: 15px; }
+    .app-clock { padding: 4px 10px; }
+    .app-clock__time { font-size: 14px; }
+    .card-title--lg { font-size: 18px; }
+    .btn-att { font-size: 13.5px; gap: 6px; padding: 12px 6px; }
+    .att-name { font-size: 13px; }
+    .nav-rail .nav-link { padding: 0 12px; font-size: 13px; }
+}
+
+/* Tablet ke atas */
+@media (min-width: 768px) {
+    .app-header__inner { padding-top: 12px; padding-bottom: 12px; }
+    .app-brand__title { font-size: 17px; }
+    .app-brand__sub { font-size: 12px; }
+    .app-clock__time { font-size: 17px; }
+
+    .nav-rail { justify-content: center; gap: 4px; }
+    .nav-rail .nav-link { min-height: 46px; padding: 0 20px; font-size: 14px; }
+
+    .actions { gap: 12px; }
+}
+
+@media (min-width: 992px) {
+    .card-title { font-size: 18px; }
+    .kiosk { padding: 22px 20px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+}
