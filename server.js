@@ -164,7 +164,7 @@ app.get('/api/absensi/hari-ini', (req, res) => {
   const today = new Date().toISOString().split('T')[0];
   const query = `
     SELECT k.kar_kode as karyawan_id, k.kar_nama as nama, k.kar_bag_kode as posisi, k.kar_gapok as upah_harian, p.pab_nama as nama_pabrik,
-           a.id as absensi_id, a.jam_masuk, a.jam_pulang, a.foto_masuk, a.catatan
+           a.id as absensi_id, a.jam_masuk, a.jam_pulang, a.catatan
     FROM tkaryawan k
     LEFT JOIN tpabrik p ON k.kar_pab_kode = p.pab_kode
     LEFT JOIN tabsensi_wajah a ON k.kar_kode = a.karyawan_id AND a.tanggal = ?
@@ -190,14 +190,14 @@ app.post('/api/absensi', (req, res) => {
     return res.status(400).json({ error: 'Foto wajah wajib diambil untuk verifikasi!' });
   }
 
-  pool.query('SELECT * FROM tkaryawan WHERE kar_kode = ?', [karyawan_id], (err, results) => {
+  pool.query('SELECT kar_nama FROM tkaryawan WHERE kar_kode = ?', [karyawan_id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     if (results.length === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
 
     const karyawan = results[0];
     
     // Check attendance status for today
-    pool.query('SELECT * FROM tabsensi_wajah WHERE karyawan_id = ? AND tanggal = ?', [karyawan_id, today], (err, attResults) => {
+    pool.query('SELECT id FROM tabsensi_wajah WHERE karyawan_id = ? AND tanggal = ?', [karyawan_id, today], (err, attResults) => {
       if (err) return res.status(500).json({ error: err.message });
 
       if (aksi === 'masuk') {

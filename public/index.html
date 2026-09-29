@@ -1009,7 +1009,6 @@ if ('serviceWorker' in navigator) {
         loadPabrik();
         loadKaryawan();
         loadHariIni();
-        loadLaporan();
     }
 
     function startCamera() {
@@ -1113,8 +1112,11 @@ if ('serviceWorker' in navigator) {
     }
 
     function loadHariIni() {
-        fetch('/api/absensi/hari-ini')
-            .then(res => res.json())
+        return fetch('/api/absensi/hari-ini')
+            .then(res => {
+                if (!res.ok) throw new Error('Gagal mengambil absensi hari ini: HTTP ' + res.status);
+                return res.json();
+            })
             .then(res => {
                 const rows = res.data || [];
                 attRowsCache = rows;
@@ -1124,11 +1126,13 @@ if ('serviceWorker' in navigator) {
                 if (summary) summary.innerText = counts.total + ' karyawan · ' + counts.sudahAbsen + ' sudah absen · ' + counts.belum + ' belum absen';
                 refreshAttSummaryButton();
                 renderHariIni(rows);
+                return true;
             })
             .catch(err => {
                 console.error("Error loading hari ini:", err);
                 const tableHariIni = document.getElementById('table-hari-ini');
                 if (tableHariIni) tableHariIni.innerHTML = '<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i>Gagal memuat data absensi</div></td></tr>';
+                return false;
             });
     }
 
@@ -1136,9 +1140,7 @@ if ('serviceWorker' in navigator) {
         const visible = rows.slice(0, attShown);
         let html = '';
         visible.forEach(row => {
-                    const foto = row.foto_masuk
-                        ? '<span class="att-avatar"><img src="' + escHtml(row.foto_masuk) + '" alt=""></span>'
-                        : '<span class="att-avatar">' + escHtml(initials(row.nama)) + '</span>';
+                    const foto = '<span class="att-avatar">' + escHtml(initials(row.nama)) + '</span>';
 
                     const meta = [];
                     if (row.karyawan_id) meta.push('ID ' + escHtml(row.karyawan_id));
@@ -1226,10 +1228,14 @@ if ('serviceWorker' in navigator) {
             .catch(err => console.error("Error loading laporan:", err));
     }
 
-    function submitAbsen(aksi) {
-        // Clear inactivity timeout begitu MASUK/PULANG dilakukan
-        // (jangan biarkan auto-reset 15 detik membatalkan saat proses berjalan).
-        clearRecognitionLockTimer();
+    // Rekap cukup dimuat ketika tab dibuka, tidak setiap selesai absen.
+    document.addEventListener('shown.bs.tab', function (e) {
+        if (e.target && e.target.getAttribute('data-bs-target') === '#tab-laporan') loadLaporan();
+    });
+
+    let absenSubmitting = false;
+    async function submitAbsen(aksi) {
+        if (absenSubmitting) return;
         const manualId = document.getElementById('select-karyawan').value;
         const karyawan_id = matchedKaryawan ? matchedKaryawan.id : manualId;
         const alertBox = document.getElementById('alert-box');
@@ -1244,13 +1250,22 @@ if ('serviceWorker' in navigator) {
             return;
         }
 
-        fetch('/api/absensi', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ karyawan_id, aksi, foto: capturedPhotoData })
-        })
-        .then(async res => {
+        // Tahan klik berulang selama POST; refresh daftar tidak mengunci tombol.
+        clearRecognitionLockTimer();
+        absenSubmitting = true;
+        const buttons = document.querySelectorAll('#kiosk-actions button');
+        buttons.forEach(button => { button.disabled = true; });
+        const postStart = performance.now();
+        let postMeasured = false;
+        try {
+            const res = await fetch('/api/absensi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ karyawan_id, aksi, foto: capturedPhotoData })
+            });
             const data = await res.json();
+            console.info(`[Absensi] POST /api/absensi (${aksi}): ${(performance.now() - postStart).toFixed(0)} ms (jaringan + respons)`);
+            postMeasured = true;
             if (!res.ok) throw new Error(data.error);
             const icon = aksi === 'masuk' ? 'fa-door-open' : 'fa-door-closed';
             alertBox.innerHTML = `<div class="alert alert-success"><i class="fa-solid ${icon} me-1"></i> ${escHtml(data.message)}</div>`;
@@ -1261,7 +1276,10 @@ if ('serviceWorker' in navigator) {
             capturedPhotoData = "";
             // Reset identity + visual recognition (clear matched, Nama/NIK, Scan Ulang).
             resetRecognitionState();
-            loadAllData();
+            const refreshStart = performance.now();
+            loadHariIni().then(refreshed => {
+                console.info(`[Absensi] Refresh daftar hari ini: ${(performance.now() - refreshStart).toFixed(0)} ms (data + render DOM${refreshed ? '' : ', gagal'})`);
+            });
             // Kamera tetap aktif jika memungkinkan → auto-recognition hidup lagi
             // untuk karyawan berikutnya (tanpa perlu klik Scan).
             const video = document.getElementById('video-preview');
@@ -1274,15 +1292,18 @@ if ('serviceWorker' in navigator) {
                 ensureKioskCamera();
             }
             syncKioskCameraButton();
-        })
-        .catch(err => {
+        } catch (err) {
+            if (!postMeasured) console.info(`[Absensi] POST /api/absensi (${aksi}) gagal setelah ${(performance.now() - postStart).toFixed(0)} ms`);
             alertBox.innerHTML = '<div class="alert alert-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> ' + escHtml(err.message) + '</div>';
             // Submit gagal → identity tetap terkunci, tapi aktifkan auto-reset 15 detik
             // supaya tidak "nyangkut" selamanya jika user tidak melakukan apa-apa.
             if (identityLocked && !recognitionLockTimer) {
                 recognitionLockTimer = setTimeout(onRecognitionInactivity, RECOGNITION_LOCK_TIMEOUT);
             }
-        });
+        } finally {
+            absenSubmitting = false;
+            buttons.forEach(button => { button.disabled = false; });
+        }
     }
 
     async function tambahKaryawan(e) {
