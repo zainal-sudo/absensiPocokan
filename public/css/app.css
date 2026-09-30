@@ -366,6 +366,13 @@ code {
     -webkit-transform: scaleX(-1);
 }
 
+/* Kamera belakang: tanpa mirror agar tidak terbalik (hanya visual preview). */
+#video-preview.cam--rear,
+#reg-video-preview.cam--rear {
+    transform: none;
+    -webkit-transform: none;
+}
+
 #canvas-capture { display: none; }
 
 #img-result,

@@ -33,46 +33,20 @@ pool.getConnection((err, connection) => {
   } else {
     console.log('Connected to MySQL database db_pocokan.');
     connection.release();
-    initAttendanceTable();
-    ensureFaceColumns();
+    checkAttendanceSchema();
   }
 });
 
-function ensureFaceColumns() {
-  pool.query(`SHOW COLUMNS FROM tkaryawan LIKE 'foto_wajah'`, (err, cols) => {
-    if (!err && cols.length === 0) {
-      pool.query(`ALTER TABLE tkaryawan ADD COLUMN foto_wajah LONGTEXT`, (e) => {
-        if (e) console.error('Error adding foto_wajah:', e.message);
-        else console.log('Kolom foto_wajah ditambahkan.');
-      });
-    }
-  });
-  pool.query(`SHOW COLUMNS FROM tkaryawan LIKE 'face_descriptor'`, (err, cols) => {
-    if (!err && cols.length === 0) {
-      pool.query(`ALTER TABLE tkaryawan ADD COLUMN face_descriptor LONGTEXT`, (e) => {
-        if (e) console.error('Error adding face_descriptor:', e.message);
-        else console.log('Kolom face_descriptor ditambahkan.');
-      });
-    }
-  });
-}
-
-function initAttendanceTable() {
-  const query = `
-    CREATE TABLE IF NOT EXISTS tabsensi_wajah (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      karyawan_id VARCHAR(50) NOT NULL,
-      tanggal DATE NOT NULL,
-      jam_masuk TIME,
-      jam_pulang TIME,
-      foto_masuk LONGTEXT,
-      status ENUM('Hadir', 'Izin', 'Alpha') DEFAULT 'Hadir',
-      catatan TEXT
-    )
-  `;
-  pool.query(query, (err) => {
-    if (err) console.error('Error creating tabsensi_wajah table:', err.message);
-  });
+function checkAttendanceSchema() {
+  // Schema dikelola terpisah dengan persetujuan; startup hanya memeriksa.
+  for (const query of [
+    'SELECT kar_kode, kar_isaktif, foto_wajah, face_descriptor FROM tkaryawan LIMIT 0',
+    'SELECT id, karyawan_id, tanggal, jam_masuk, jam_pulang, foto_masuk, status, catatan FROM tabsensi_wajah LIMIT 0'
+  ]) {
+    pool.query(query, (err) => {
+      if (err) console.error('Schema absensi belum sesuai; periksa database tanpa perubahan otomatis:', err.code);
+    });
+  }
 }
 
 // API: Get Pabrik List from tpabrik
@@ -94,6 +68,7 @@ app.get('/api/karyawan', (req, res) => {
            CASE WHEN k.foto_wajah IS NOT NULL AND k.foto_wajah != '' THEN 1 ELSE 0 END as has_face
     FROM tkaryawan k
     LEFT JOIN tpabrik p ON k.kar_pab_kode = p.pab_kode
+    WHERE k.kar_isaktif = 1
     ORDER BY k.kar_nama ASC
   `;
   pool.query(query, (err, results) => {
@@ -108,7 +83,7 @@ app.get('/api/karyawan', (req, res) => {
 // API: Face descriptors untuk auto-recognition (ringan, tanpa foto base64)
 app.get('/api/karyawan/descriptors', (req, res) => {
   pool.query(
-    `SELECT kar_kode as id, kar_nama as nama, face_descriptor FROM tkaryawan WHERE face_descriptor IS NOT NULL AND face_descriptor != ''`,
+    `SELECT kar_kode as id, kar_nama as nama, face_descriptor FROM tkaryawan WHERE kar_isaktif = 1 AND face_descriptor IS NOT NULL AND face_descriptor != ''`,
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(results);
@@ -116,46 +91,27 @@ app.get('/api/karyawan/descriptors', (req, res) => {
   );
 });
 
-// API: Update wajah + descriptor karyawan lama (wajib agar 957 karyawan lama bisa auto-scan)
+// API: Daftar wajah hanya untuk master karyawan aktif dari Pocokan
 app.put('/api/karyawan/:id/face', (req, res) => {
   const { foto_wajah, face_descriptor } = req.body;
   const id = req.params.id;
   if (!face_descriptor) return res.status(400).json({ error: 'face_descriptor wajib!' });
   const descStr = typeof face_descriptor === 'string' ? face_descriptor : JSON.stringify(face_descriptor);
   pool.query(
-    `UPDATE tkaryawan SET foto_wajah = ?, face_descriptor = ? WHERE kar_kode = ?`,
+    `UPDATE tkaryawan SET foto_wajah = ?, face_descriptor = ? WHERE kar_kode = ? AND kar_isaktif = 1`,
     [foto_wajah || '', descStr, id],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
-      if (result.affectedRows === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
+      if (result.affectedRows === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan atau sudah nonaktif. Periksa Master Karyawan Pocokan.' });
       res.json({ message: 'Wajah karyawan berhasil didaftarkan!' });
     }
   );
 });
 
-// API: Add Karyawan (Register Face & Employee)
+// Route lama dipertahankan agar client mendapat petunjuk migrasi yang jelas.
 app.post('/api/karyawan', (req, res) => {
-  const { nama, posisi, upah_harian, pin, pabrik_id, foto_wajah, face_descriptor } = req.body;
-  if (!nama) {
-    return res.status(400).json({ error: 'Nama karyawan wajib diisi!' });
-  }
-
-  // Generate unique code or sequential/numeric if needed
-  const kode = 'K' + Date.now().toString().slice(-6);
-  const descStr = face_descriptor
-    ? (typeof face_descriptor === 'string' ? face_descriptor : JSON.stringify(face_descriptor))
-    : '';
-  const query = `
-    INSERT INTO tkaryawan (kar_kode, kar_nama, kar_bag_kode, kar_gapok, kar_rekening, kar_pab_kode, foto_wajah, face_descriptor)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  pool.query(query, [kode, nama, posisi || '001', 0, pin || '123456', pabrik_id || 'P01', foto_wajah || '', descStr], (err, result) => {
-    if (err) {
-      console.error("Error inserting karyawan:", err.message);
-      return res.status(500).json({ error: err.message });
-    }
-    res.json({ message: 'Karyawan dan pendaftaran wajah berhasil disimpan!', id: kode });
+  res.status(403).json({
+    error: 'Buat atau aktifkan karyawan melalui Master Karyawan Pocokan, lalu pilih karyawan aktif untuk mendaftarkan wajah.'
   });
 });
 
@@ -168,6 +124,7 @@ app.get('/api/absensi/hari-ini', (req, res) => {
     FROM tkaryawan k
     LEFT JOIN tpabrik p ON k.kar_pab_kode = p.pab_kode
     LEFT JOIN tabsensi_wajah a ON k.kar_kode = a.karyawan_id AND a.tanggal = ?
+    WHERE k.kar_isaktif = 1
     ORDER BY k.kar_nama ASC
   `;
   pool.query(query, [today], (err, results) => {
@@ -190,9 +147,9 @@ app.post('/api/absensi', (req, res) => {
     return res.status(400).json({ error: 'Foto wajah wajib diambil untuk verifikasi!' });
   }
 
-  pool.query('SELECT kar_nama FROM tkaryawan WHERE kar_kode = ?', [karyawan_id], (err, results) => {
+  pool.query('SELECT kar_nama FROM tkaryawan WHERE kar_kode = ? AND kar_isaktif = 1', [karyawan_id], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (results.length === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan' });
+    if (results.length === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan atau sudah nonaktif. Periksa Master Karyawan Pocokan.' });
 
     const karyawan = results[0];
     
@@ -204,18 +161,24 @@ app.post('/api/absensi', (req, res) => {
         if (attResults.length > 0) {
           return res.status(400).json({ error: 'Karyawan sudah melakukan absen masuk hari ini!' });
         }
-        const insertQuery = 'INSERT INTO tabsensi_wajah (karyawan_id, tanggal, jam_masuk, foto_masuk, catatan) VALUES (?, ?, ?, ?, ?)';
-        pool.query(insertQuery, [karyawan_id, today, timeNow, foto, catatan || 'Verifikasi Wajah'], (err) => {
+        // Periksa ulang status aktif di statement penulisan, termasuk client dengan cache lama.
+        const insertQuery = `INSERT INTO tabsensi_wajah (karyawan_id, tanggal, jam_masuk, foto_masuk, catatan)
+          SELECT kar_kode, ?, ?, ?, ? FROM tkaryawan WHERE kar_kode = ? AND kar_isaktif = 1`;
+        pool.query(insertQuery, [today, timeNow, foto, catatan || 'Verifikasi Wajah', karyawan_id], (err, result) => {
           if (err) return res.status(500).json({ error: err.message });
+          if (result.affectedRows === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan atau sudah nonaktif.' });
           res.json({ message: `Absen Masuk Berhasil, Halo ${karyawan.kar_nama}!` });
         });
       } else if (aksi === 'pulang') {
         if (attResults.length === 0) {
           return res.status(400).json({ error: 'Karyawan belum melakukan absen masuk!' });
         }
-        const updateQuery = 'UPDATE tabsensi_wajah SET jam_pulang = ?, catatan = CONCAT(IFNULL(catatan,""), " | ", ?) WHERE id = ?';
-        pool.query(updateQuery, [timeNow, catatan || 'Pulang', attResults[0].id], (err) => {
+        const updateQuery = `UPDATE tabsensi_wajah a JOIN tkaryawan k ON k.kar_kode = a.karyawan_id
+          SET a.jam_pulang = ?, a.catatan = CONCAT(IFNULL(a.catatan,""), " | ", ?)
+          WHERE a.id = ? AND k.kar_isaktif = 1`;
+        pool.query(updateQuery, [timeNow, catatan || 'Pulang', attResults[0].id], (err, result) => {
           if (err) return res.status(500).json({ error: err.message });
+          if (result.affectedRows === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan atau sudah nonaktif.' });
           res.json({ message: `Absen Pulang Berhasil, ${karyawan.kar_nama}!` });
         });
       } else {
