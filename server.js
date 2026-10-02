@@ -5,6 +5,7 @@ const fs = require('fs');
 const https = require('https');
 const os = require('os');
 const { getJakartaDateTime } = require('./public/jakarta-time');
+const createEmployeeAuth = require('./lib/employee-auth');
 
 // Muat .env bila ada (opsional, tanpa wajib install dotenv)
 try { require('dotenv').config(); } catch (e) {}
@@ -26,6 +27,14 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
+});
+
+const employeeAuth = createEmployeeAuth(pool);
+employeeAuth.registerRoutes(app);
+app.use('/api/karyawan', (req, res, next) => {
+  // Mesin Absen tetap dapat mengenali wajah tanpa login petugas.
+  if (req.method === 'GET' && req.path === '/descriptors') return next();
+  return employeeAuth.requireLogin(req, res, next);
 });
 
 pool.getConnection((err, connection) => {

@@ -16,6 +16,9 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
     <link rel="stylesheet" href="/css/app.css?v=registration-auto-1">
+    <link rel="stylesheet" href="/css/fullscreen.css?v=1">
+    <link rel="stylesheet" href="/css/employee-auth.css?v=1">
+    <script src="/fullscreen.js?v=1" defer></script>
 </head>
 <body>
 
@@ -29,12 +32,19 @@
             </span>
         </a>
         <span class="app-header__spacer"></span>
-        <div class="app-clock">
-            <span class="app-clock__label">Waktu</span>
-            <span class="app-clock__time" id="current-time">--:--</span>
+        <div class="app-header-tools">
+            <button type="button" id="fullscreen-toggle" class="btn-ui btn-ui--sm fullscreen-toggle" aria-pressed="false" aria-label="Layar Penuh" title="Layar Penuh">
+                <i id="fullscreen-icon" class="fa-solid fa-expand" aria-hidden="true"></i>
+                <span id="fullscreen-label">Layar Penuh</span>
+            </button>
+            <div class="app-clock">
+                <span class="app-clock__label">Waktu</span>
+                <span class="app-clock__time" id="current-time">--:--</span>
+            </div>
         </div>
     </div>
 </header>
+<p id="fullscreen-status" class="fullscreen-notice" role="status" aria-live="polite" hidden></p>
 
 <main class="app-shell">
     <ul class="nav nav-pills nav-rail" id="pills-tab" role="tablist">
@@ -155,6 +165,35 @@
 
         <!-- TAB 2: KARYAWAN -->
         <div class="tab-pane fade" id="tab-karyawan">
+            <section id="employee-login-panel" class="card-kiosk employee-login-card" aria-labelledby="employee-login-title">
+                <div class="card-head">
+                    <div>
+                        <h2 class="card-title" id="employee-login-title">Masuk Menu Karyawan</h2>
+                        <p class="card-sub">Gunakan akun Pocokan untuk mengakses data karyawan dan pendaftaran wajah.</p>
+                    </div>
+                </div>
+                <form id="employee-login-form">
+                    <div class="field">
+                        <label class="form-label-ui" for="employee-login-username">Username</label>
+                        <input id="employee-login-username" name="username" type="text" class="form-control-ui" placeholder="Masukkan username…" autocomplete="username" maxlength="128" required>
+                    </div>
+                    <div class="field">
+                        <label class="form-label-ui" for="employee-login-password">Password</label>
+                        <div class="employee-login-password">
+                            <input id="employee-login-password" name="password" type="password" class="form-control-ui" placeholder="Masukkan password…" autocomplete="current-password" maxlength="1024" required>
+                            <button type="button" id="employee-password-toggle" class="employee-password-toggle" aria-label="Tampilkan password" aria-pressed="false"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <p id="employee-login-message" class="employee-login-message" role="status" aria-live="polite"></p>
+                    <button type="submit" id="employee-login-submit" class="btn-ui btn-ui--primary btn-ui--block"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+                </form>
+                <button type="button" id="employee-logout-retry" class="btn-ui btn-ui--sm" hidden>Coba Keluar Lagi</button>
+            </section>
+            <div id="employee-admin-content" hidden>
+            <div class="employee-auth-bar">
+                <span id="employee-auth-user"></span>
+                <button type="button" id="employee-logout" class="btn-ui btn-ui--sm"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+            </div>
             <div class="row g-3 g-lg-4">
                 <!-- Pendaftaran wajah master karyawan aktif dari Pocokan -->
                 <div class="col-12 col-lg-5 col-xl-4">
@@ -239,6 +278,7 @@
                         </button>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 
@@ -428,6 +468,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/app-config.js"></script>
 <script src="/jakarta-time.js"></script>
+<script src="/employee-auth.js?v=1"></script>
 <script>
     // Base URL API: browser ("") pakai alamat yang sedang dibuka,
     // APK native diisi via app-config.js (cth "http://IP-VPS:3001").
@@ -1778,6 +1819,7 @@ if ('serviceWorker' in navigator) {
     let karyawanCache = null;
     let karyawanRequest = null;
     let karyawanTableRendered = false;
+    let employeeDataVersion = 0;
     let employeePickerLimit = 3;
     const EMPLOYEE_LIST_STEP = 30;
     let employeeListLimit = EMPLOYEE_LIST_STEP;
@@ -1964,15 +2006,21 @@ if ('serviceWorker' in navigator) {
     }
 
     function loadKaryawan(refresh = false) {
+        if (!EmployeeAuth.authenticated) return Promise.resolve(null);
+        const version = employeeDataVersion;
         // Bila registrasi selesai saat request awal masih berjalan, ambil data
         // terbaru setelah request itu selesai (jangan pakai hasil sebelum simpan).
         if (karyawanRequest) return refresh ? karyawanRequest.then(() => loadKaryawan()) : karyawanRequest;
         karyawanRequest = fetch(API_BASE + '/api/karyawan')
             .then(res => {
+                if (version !== employeeDataVersion) return null;
+                if (res.status === 401) EmployeeAuth.lock('Sesi login berakhir. Silakan masuk kembali.');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
+                EmployeeAuth.refreshExpiry(res);
                 return res.json();
             })
             .then(data => {
+                if (!data || version !== employeeDataVersion || !EmployeeAuth.authenticated) return null;
                 karyawanCache = data;
                 syncEmployeeList();
                 karyawanTableRendered = false;
@@ -1991,9 +2039,7 @@ if ('serviceWorker' in navigator) {
 
     document.addEventListener('shown.bs.tab', function (e) {
         const tab = e.target && e.target.getAttribute('data-bs-target');
-        if (tab === '#tab-karyawan') {
-            loadKaryawan(true);
-        } else if (tab === '#tab-pabrik') {
+        if (tab === '#tab-pabrik') {
             loadPabrik();
         }
     });
@@ -2293,9 +2339,11 @@ if ('serviceWorker' in navigator) {
         try {
             const res = await fetch(API_BASE + '/api/karyawan/' + encodeURIComponent(existingId) + '/face', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'AbsensiWajah' },
                 body: JSON.stringify({ foto_wajah: regPhotoData, face_descriptor: regDescriptor })
             });
+            if (res.status === 401) EmployeeAuth.lock('Sesi login berakhir. Silakan masuk kembali.');
+            if (res.ok && typeof EmployeeAuth !== 'undefined') EmployeeAuth.refreshExpiry(res);
             const resJson = await res.json();
             if (!res.ok) throw new Error(resJson.error || 'Gagal simpan');
             e.target.reset();
@@ -2329,7 +2377,30 @@ if ('serviceWorker' in navigator) {
     // Mulai setelah seluruh cache/state halaman terinisialisasi; kamera tidak
     // boleh tertahan oleh error inisialisasi data admin.
     initAutoKioskCamera();
-    loadKaryawan(); // dropdown pendaftaran + tabel karyawan diisi saat awal
+    EmployeeAuth.init({
+        apiBase: API_BASE,
+        onAuthenticated: () => loadKaryawan(true),
+        onLocked: () => {
+            employeeDataVersion++;
+            karyawanCache = null;
+            karyawanTableRendered = false;
+            stopRegLive();
+            stopStream(document.getElementById('reg-video-preview'));
+            closeEmployeePicker();
+            bootstrap.Modal.getInstance(document.getElementById('employee-list-modal'))?.hide();
+            regPhotoData = '';
+            regDescriptor = null;
+            document.getElementById('reg-img-result').removeAttribute('src');
+            document.getElementById('reg-result-row').style.display = 'none';
+            document.getElementById('k-existing').innerHTML = '<option value="">— Pilih karyawan aktif —</option>';
+            document.getElementById('table-karyawan').innerHTML = '';
+            document.getElementById('employee-picker-results').innerHTML = '';
+            document.getElementById('employee-picker-toggle').disabled = true;
+            document.getElementById('employee-list-open').disabled = true;
+            document.getElementById('employee-logout-retry').hidden = true;
+            syncRegCameraButtons();
+        }
+    });
     loadHariIni();
     tickClock();
     setInterval(tickClock, 1000);

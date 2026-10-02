@@ -1,0 +1,9 @@
+/* Fitur fullscreen terpisah agar mudah dibatalkan. */
+.app-header-tools { display: flex; align-items: stretch; gap: 8px; }
+.fullscreen-toggle { flex-shrink: 0; min-height: 0; padding: 0 10px; }
+.fullscreen-notice { margin: 8px auto; padding: 8px 16px; max-width: 1200px; color: #b32020; font-size: 13px; }
+.fullscreen-notice[hidden] { display: none; }
+@media (max-width: 575.98px) {
+    #fullscreen-label { display: none; }
+    .fullscreen-toggle { padding: 0 10px; }
+}

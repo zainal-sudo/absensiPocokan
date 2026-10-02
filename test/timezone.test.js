@@ -68,7 +68,7 @@ function harness(instant) {
             if (name === './public/jakarta-time') {
                 return { getJakartaDateTime: () => getJakartaDateTime(new MockDate()) };
             }
-            return require(name);
+            return require(name.startsWith('./') ? path.join(root, name) : name);
         }
     });
     vm.runInContext(serverSource, context);

@@ -1,0 +1,10 @@
+#employee-login-panel[hidden], #employee-admin-content[hidden], #employee-logout-retry[hidden] { display: none !important; }
+.employee-login-card { max-width: 520px; margin: 0 auto; }
+.employee-login-password { position: relative; }
+.employee-login-password input { padding-right: 48px; }
+.employee-password-toggle { position: absolute; right: 4px; top: 0; bottom: 0; width: 40px; border: 0; background: transparent; color: var(--gray-500); border-radius: var(--r-md); }
+.employee-password-toggle:focus-visible { outline: 2px solid var(--brand-500); }
+.employee-login-message { margin: 12px 0; font-size: 13px; color: var(--danger-700); }
+.employee-login-message:empty { display: none; }
+.employee-auth-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.employee-auth-bar span { font-size: 13px; overflow-wrap: anywhere; color: var(--gray-600); }
