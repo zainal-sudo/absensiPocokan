@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-    <link rel="stylesheet" href="/css/app.css?v=reg-camera-focus-4">
+    <link rel="stylesheet" href="/css/app.css?v=reg-camera-focus-6">
 </head>
 <body>
 
@@ -218,7 +218,7 @@
                                 <div id="reg-face-status" class="manual__hint" style="text-align:left"></div>
                                 <pre id="reg-debug-log" class="text-start bg-dark text-light rounded p-2 mt-2" style="font-size:10px;max-height:150px;overflow-y:auto;display:none;"></pre>
                                 <div class="registration-result-actions">
-                                    <button type="button" id="btn-retake-reg-face" class="btn-ui btn-ui--sm" onclick="retakeRegFace()" style="display:none;"><i class="fa-solid fa-camera-rotate"></i> <span>Ambil Ulang Foto Wajah</span></button>
+                                    <button type="button" id="btn-retake-reg-face" class="btn-ui btn-ui--sm" onclick="retakeRegFace()" style="display:none;"><i class="fa-solid fa-camera-rotate"></i> <span>Ambil Ulang<br>Foto Wajah</span></button>
                                     <button type="submit" id="btn-save-reg-face" class="btn-ui btn-ui--primary" style="display:none;"><i class="fa-solid fa-floppy-disk"></i> <span>Daftarkan Wajah</span></button>
                                 </div>
                             </div>
@@ -361,6 +361,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/app-config.js"></script>
+<script src="/jakarta-time.js"></script>
 <script>
     // Base URL API: browser ("") pakai alamat yang sedang dibuka,
     // APK native diisi via app-config.js (cth "http://IP-VPS:3001").
@@ -1466,16 +1467,18 @@ if ('serviceWorker' in navigator) {
         }
     }
 
+    let clockTanggalWIB = null;
     function tickClock() {
         const now = new Date();
+        const waktu = JakartaTime.getJakartaDateTime(now);
         const timeEl = document.getElementById('current-time');
         const dateEl = document.getElementById('today-date-str');
-        if (timeEl) timeEl.innerText = now.toLocaleTimeString('id-ID');
-        if (dateEl) dateEl.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        if (timeEl) timeEl.innerText = waktu.jam;
+        if (dateEl) dateEl.innerText = now.toLocaleDateString('id-ID', { timeZone: JakartaTime.timeZone, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const hariBerganti = clockTanggalWIB !== null && clockTanggalWIB !== waktu.tanggal;
+        clockTanggalWIB = waktu.tanggal;
+        if (hariBerganti) loadHariIni();
     }
-
-    tickClock();
-    setInterval(tickClock, 1000);
 
     function startCamera() {
         // Fallback/retry: kamera dibuka manual, scanning tetap otomatis.
@@ -1657,6 +1660,9 @@ if ('serviceWorker' in navigator) {
                 return res.json();
             })
             .then(res => {
+                // Respons sebelum tengah malam bisa tiba sesudah respons hari baru.
+                // Jangan biarkan data hari kemarin menimpa daftar hari ini.
+                if (res.tanggal !== JakartaTime.getJakartaDateTime().tanggal) return false;
                 const rows = res.data || [];
                 attRowsCache = rows.slice().sort(sortAttendanceRows);
                 attShown = ATT_STEP;
@@ -1925,6 +1931,12 @@ if ('serviceWorker' in navigator) {
     initAutoKioskCamera();
     loadKaryawan(); // dropdown manual kiosk diisi saat awal
     loadHariIni();
+    tickClock();
+    setInterval(tickClock, 1000);
+    // Timer HP bisa dijeda saat background; periksa hari segera saat kembali.
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) tickClock();
+    });
 </script>
 </body>
 </html>

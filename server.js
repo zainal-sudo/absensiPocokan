@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const os = require('os');
+const { getJakartaDateTime } = require('./public/jakarta-time');
 
 // Muat .env bila ada (opsional, tanpa wajib install dotenv)
 try { require('dotenv').config(); } catch (e) {}
@@ -117,7 +118,7 @@ app.post('/api/karyawan', (req, res) => {
 
 // API: Today Attendance Summary
 app.get('/api/absensi/hari-ini', (req, res) => {
-  const today = new Date().toISOString().split('T')[0];
+  const { tanggal: today } = getJakartaDateTime();
   const query = `
     SELECT k.kar_kode as karyawan_id, k.kar_nama as nama, k.kar_bag_kode as posisi, k.kar_gapok as upah_harian, p.pab_nama as nama_pabrik,
            a.id as absensi_id, a.jam_masuk, a.jam_pulang, a.catatan
@@ -136,8 +137,8 @@ app.get('/api/absensi/hari-ini', (req, res) => {
 // API: Submit Absen (Face Verification Match)
 app.post('/api/absensi', (req, res) => {
   const { karyawan_id, aksi, foto, catatan } = req.body;
-  const today = new Date().toISOString().split('T')[0];
-  const timeNow = new Date().toTimeString().split(' ')[0];
+  // Ambil satu instant saat request diterima, termasuk bila query melewati tengah malam.
+  const { tanggal: today, jam: timeNow } = getJakartaDateTime();
 
   if (!karyawan_id) {
     return res.status(400).json({ error: 'Pilih karyawan terlebih dahulu!' });
@@ -191,7 +192,7 @@ app.post('/api/absensi', (req, res) => {
 // API: Report History
 app.get('/api/absensi/laporan', (req, res) => {
   const query = `
-    SELECT a.tanggal, k.kar_nama as nama, k.kar_bag_kode as posisi, p.pab_nama as nama_pabrik, a.jam_masuk, a.jam_pulang, a.catatan
+    SELECT DATE_FORMAT(a.tanggal, '%Y-%m-%d') as tanggal, k.kar_nama as nama, k.kar_bag_kode as posisi, p.pab_nama as nama_pabrik, a.jam_masuk, a.jam_pulang, a.catatan
     FROM tabsensi_wajah a
     JOIN tkaryawan k ON a.karyawan_id = k.kar_kode
     LEFT JOIN tpabrik p ON k.kar_pab_kode = p.pab_kode

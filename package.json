@@ -4,7 +4,8 @@
   "description": "Aplikasi Absensi HP Kantor dengan MySQL & Anti Titip Absen",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

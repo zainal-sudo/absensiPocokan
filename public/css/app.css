@@ -426,7 +426,7 @@ code {
 
 .registration-result-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
     gap: 8px;
 }
 
@@ -439,6 +439,8 @@ code {
 }
 
 .registration-result-actions .fa-solid { flex-shrink: 0; }
+
+#btn-retake-reg-face > .fa-solid { transform: translateX(-4px); }
 
 #btn-save-reg-face { scroll-margin-bottom: 12px; }
 

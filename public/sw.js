@@ -1,9 +1,10 @@
 // Service worker minimal agar aplikasi memenuhi syarat "Install" (PWA).
 // Hanya cache app-shell same-origin; API (/api/*) selalu network.
-const CACHE = 'absensi-v1';
+const CACHE = 'absensi-v2-wib';
 const SHELL = [
   '/',
   '/app-config.js',
+  '/jakarta-time.js',
   '/manifest.webmanifest',
   '/css/app.css',
   '/icons/icon-192.png',
