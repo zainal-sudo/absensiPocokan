@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-    <link rel="stylesheet" href="/css/app.css?v=reg-camera-focus-6">
+    <link rel="stylesheet" href="/css/app.css?v=reg-result-1">
 </head>
 <body>
 
@@ -43,12 +43,6 @@
         </li>
         <li class="nav-item">
             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-karyawan" type="button" role="tab" aria-controls="tab-karyawan" aria-selected="false"><i class="fa-solid fa-users"></i><span class="nav-label-short">Karyawan</span><span class="nav-label-long">Data Karyawan &amp; Pendaftaran Wajah</span></button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-pabrik" type="button" role="tab" aria-controls="tab-pabrik" aria-selected="false"><i class="fa-solid fa-industry"></i><span class="nav-label-short">Pabrik</span><span class="nav-label-long">Data Pabrik</span></button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#tab-laporan" type="button" role="tab" aria-controls="tab-laporan" aria-selected="false"><i class="fa-solid fa-file-lines"></i><span class="nav-label-short">Rekap</span><span class="nav-label-long">Rekap Absensi</span></button>
         </li>
     </ul>
 
@@ -107,31 +101,12 @@
                             </button>
                         </div>
 
-                        <!-- Baris aksi sekunder compact: Scan Ulang | Pilih manual (manual collapsed di HP) -->
+                        <!-- Baris aksi sekunder: Scan Ulang -->
                         <div class="kiosk-secondary">
                             <div class="kiosk-secondary__scan text-center">
                                 <button type="button" class="btn-ui btn-ui--sm" id="btn-scan-ulang" onclick="scanUlang()" style="display:none;">
                                     <i class="fa-solid fa-rotate-right"></i> Scan Ulang
                                 </button>
-                            </div>
-
-                            <!-- FALLBACK MANUAL (secondary) — collapsed di HP, tetap utuh di desktop -->
-                            <div class="manual">
-                                <button type="button" class="manual__toggle" id="btn-manual-toggle" aria-expanded="false" aria-controls="manual-body">
-                                    <i class="fa-solid fa-id-card"></i>
-                                    <span id="btn-manual-toggle-label">Pilih manual</span>
-                                    <i class="fa-solid fa-chevron-down manual__toggle-caret"></i>
-                                </button>
-                                <div class="manual__body" id="manual-body">
-                                    <div class="manual__head">
-                                        <i class="fa-solid fa-divider"></i>
-                                        <label class="manual__label" for="select-karyawan">Atau pilih karyawan secara manual</label>
-                                    </div>
-                                    <p class="manual__hint">Gunakan bila wajah belum terdaftar di database.</p>
-                                    <select class="form-select-ui" id="select-karyawan" name="karyawan">
-                                        <option value="">— Pilih Nama Karyawan —</option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -208,14 +183,27 @@
                                 </div>
                             </div>
                             <div id="registration-camera-section" class="registration-camera-focus" role="region" aria-label="Kamera dan aksi pendaftaran wajah">
-                                <video id="reg-video-preview" autoplay playsinline muted></video>
+                                <div id="reg-lens-row" class="registration-lenses" style="display:none;">
+                                    <select id="reg-rear-lens" class="form-select-ui" onchange="useRearLens(this.value)" aria-label="Lensa kamera belakang"></select>
+                                </div>
+                                <div class="registration-preview">
+                                    <video id="reg-video-preview" autoplay playsinline muted></video>
+                                    <button type="button" class="btn-ui btn-ui--sm reg-flip-overlay" id="btn-flip-cam" onclick="toggleRegCamera()" style="display:none;"><i class="fa-solid fa-rotate"></i> <span id="btn-flip-cam-label">Kamera Belakang</span></button>
+                                </div>
+                                <div id="reg-face-status-card" class="registration-status" role="status" aria-live="polite" style="display:none;">
+                                    <div id="reg-face-status" class="manual__hint"></div>
+                                </div>
                                 <canvas id="reg-canvas-capture" style="display:none;"></canvas>
                                 <div class="registration-camera-controls">
                                     <button type="button" class="btn-ui btn-ui--sm btn-ui--primary" id="btn-snap-face" onclick="captureRegFace()" style="display:none;"><i class="fa-solid fa-check"></i> Ambil Foto Wajah</button>
-                                    <button type="button" class="btn-ui btn-ui--sm" id="btn-flip-cam" onclick="toggleRegCamera()" style="display:none;"><i class="fa-solid fa-rotate"></i> <span id="btn-flip-cam-label">Kamera Belakang</span></button>
                                 </div>
-                                <img id="reg-img-result" alt="Wajah Karyawan">
-                                <div id="reg-face-status" class="manual__hint" style="text-align:left"></div>
+                                <div id="reg-result-row" class="registration-result" style="display:none;">
+                                    <img id="reg-img-result" alt="Wajah Karyawan">
+                                    <div class="registration-score">
+                                        <span id="reg-score-value">–</span>
+                                        <span class="registration-score__label">Skor deteksi</span>
+                                    </div>
+                                </div>
                                 <pre id="reg-debug-log" class="text-start bg-dark text-light rounded p-2 mt-2" style="font-size:10px;max-height:150px;overflow-y:auto;display:none;"></pre>
                                 <div class="registration-result-actions">
                                     <button type="button" id="btn-retake-reg-face" class="btn-ui btn-ui--sm" onclick="retakeRegFace()" style="display:none;"><i class="fa-solid fa-camera-rotate"></i> <span>Ambil Ulang<br>Foto Wajah</span></button>
@@ -378,6 +366,7 @@ if ('serviceWorker' in navigator) {
     let capturedPhotoData = "";
     let regPhotoData = "";
     let regDescriptor = null;
+    let regLastDetectScore = null;
     // State auto-recognition (hanya satu loop / satu timer / satu stream).
     let autoRecognitionTimer = null;
     let recognitionLockTimer = null;
@@ -524,6 +513,7 @@ if ('serviceWorker' in navigator) {
                 if (det.length > 0) {
                     det.sort((a, b) => (b.detection.box.width * b.detection.box.height) - (a.detection.box.width * a.detection.box.height));
                     rlog('pakai wajah terbesar skor=' + det[0].detection.score.toFixed(3));
+                    if (regLastDetectScore === null || det[0].detection.score > regLastDetectScore) regLastDetectScore = det[0].detection.score;
                     return det[0].descriptor;
                 }
             } catch (e) { rlog('detect ERROR: ' + e.message); }
@@ -573,7 +563,7 @@ if ('serviceWorker' in navigator) {
         if (box) box.style.display = 'none';
     }
 
-    // Satu attempt recognition (dipakai auto-loop & tombol manual/fallback).
+    // Satu attempt recognition (dipakai auto-loop & tombol scan ulang).
     async function recognizeFromCamera() {
         if (recognitionInProgress) return;   // cegah overlap
         if (identityLocked) return;          // identity sudah di-lock
@@ -588,7 +578,7 @@ if ('serviceWorker' in navigator) {
             // batalkan attempt ini agar tidak me-lock identity yang sudah dibatalkan.
             if (epoch !== recognitionEpoch) return;
             if (!query) { showScanStatus('info', '<i class="fa-solid fa-circle-info me-1"></i> Posisikan wajah di depan kamera'); return; }
-            capturePhoto(); // siapkan foto verifikasi (MASUK/PULANG/manual)
+            capturePhoto(); // siapkan foto verifikasi (MASUK/PULANG)
             if (epoch !== recognitionEpoch) return;
             const match = findBestMatch(query);
             if (epoch !== recognitionEpoch) return;
@@ -814,20 +804,6 @@ if ('serviceWorker' in navigator) {
         ensureKioskCamera(); // sukses → startAutoRecognition dipanggil di sana
     }
 
-    // Manual fallback di HP: collapsed default, dropdown dibuka saat ditekan.
-    function initManualToggle() {
-        const btn = document.getElementById('btn-manual-toggle');
-        const body = document.getElementById('manual-body');
-        const label = document.getElementById('btn-manual-toggle-label');
-        if (!btn || !body) return;
-        btn.addEventListener('click', function () {
-            const open = !body.classList.contains('is-open');
-            body.classList.toggle('is-open', open);
-            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-            if (label) label.textContent = open ? 'Tutup pilihan manual' : 'Pilih manual';
-        });
-    }
-
     function initAutoKioskCamera() {
         // Kembali ke tab Mesin Absen HP → pastikan kamera aktif & loop hidup
         document.addEventListener('shown.bs.tab', function (e) {
@@ -868,7 +844,6 @@ if ('serviceWorker' in navigator) {
         measureKioskOffset();
         ensureKioskCamera();     // busy langsung = true → tombol tetap tersembunyi
         syncKioskCameraButton(); // cek ulang setelah auto-open mulai/menunggu
-        initManualToggle();
         // Ukur ulang (debounce) saat orientasi/resize/keyboard/browser-chrome berubah
         window.addEventListener('resize', function () {
             scheduleKioskMeasure();
@@ -882,18 +857,24 @@ if ('serviceWorker' in navigator) {
     // Minta stream kamera sesuai facing ('user' = depan, 'environment' = belakang).
     // Fallback belakang: sebagian HP mengekspos tiap lensa sebagai device
     // terpisah sehingga hint facingMode diabaikan browser — pilih via deviceId.
-    // deviceId (lensa pilihan user yang tersimpan) selalu dicoba paling dulu.
+    // deviceId eksplisit harus tepat: jangan diam-diam menggantinya dengan lensa lain.
     async function requestCameraStream(facing, deviceId) {
         if (deviceId) {
-            try {
-                return await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 480 } },
-                    audio: false
-                });
-            } catch (e) {
-                // Lensa tersimpan tak ada lagi (ganti HP/browser) → buang & lanjut jalur normal.
-                try { localStorage.removeItem('regRearDeviceId'); } catch (e2) {}
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            });
+            const track = stream.getVideoTracks()[0];
+            const actualId = track && track.getSettings ? track.getSettings().deviceId : null;
+            if (actualId && actualId !== deviceId) {
+                stream.getTracks().forEach(t => t.stop());
+                throw new DOMException('Browser tidak membuka lensa yang dipilih', 'NotFoundError');
             }
+            if (facing === 'environment' && !trackIsRear(stream)) {
+                stream.getTracks().forEach(t => t.stop());
+                throw new DOMException('Lensa yang dipilih bukan kamera belakang', 'NotFoundError');
+            }
+            return stream;
         }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -918,7 +899,7 @@ if ('serviceWorker' in navigator) {
             const track = stream.getVideoTracks()[0];
             const settings = track && track.getSettings ? track.getSettings() : null;
             // Bila browser tidak melaporkan facingMode, anggap benar (jangan gagal palsu).
-            if (!settings || !settings.facingMode) return true;
+            if (!settings || !settings.facingMode) return rearLensKind(track && track.label) !== 'front';
             return settings.facingMode === 'environment';
         } catch (e) { return true; }
     }
@@ -928,25 +909,85 @@ if ('serviceWorker' in navigator) {
         const cams = devices.filter(d => d.kind === 'videoinput');
         const rear = pickRearCamera(cams);
         if (!rear) throw new DOMException('Kamera belakang tidak ditemukan', 'NotFoundError');
-        return await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: rear.deviceId }, width: { ideal: 640 }, height: { ideal: 480 } },
-            audio: false
-        });
+        return requestCameraStream('environment', rear.deviceId);
     }
 
-    function pickRearCamera(cams) {
-        if (!cams || !cams.length) return null;
-        const pool = cams.filter(d => !/front|depan/i.test(d.label || ''));
-        const list = pool.length ? pool : cams;
-        if (list.length === 1) return list[0];
-        // Konfigurasi terkunci: lensa utama = kandidat kedua (Lensa 2),
-        // Lensa 1 = ultra-wide. Pilihan tersimpan (Lensa 2) menang bila ada.
-        const stored = safeGet('regRearDeviceId');
-        if (stored) {
-            const hit = list.find(d => d.deviceId === stored);
-            if (hit) return hit;
+    function rearLensKind(label) {
+        const name = label || '';
+        if (/front|depan|selfie|facetime/i.test(name)) return 'front';
+        // Kamera virtual gabungan tidak membuktikan lensa fisik yang dipakai.
+        if (/\b(dual|triple|fusion)\b/i.test(name)) return 'unknown';
+        if (/ultra[\s-]*wide|ultra[\s-]*lebar|\b0[.,]\d+\s*[x×]/i.test(name)) return 'ultrawide';
+        if (/telephoto|\btele\b|macro|makro|depth|infrared/i.test(name)) return 'other';
+        if (/\b(main|primary|standard|utama|wide)\b|\b1(?:[.,]0)?\s*[x×]/i.test(name)) return 'main';
+        return 'unknown';
+    }
+
+    function rearCameraCandidates(cams) {
+        return (cams || []).filter(c => c.kind === 'videoinput' && c.deviceId && rearLensKind(c.label) !== 'front');
+    }
+
+    function isDefaultRearLabel(label) {
+        // Fallback label Android, bukan asumsi bahwa urutan "Lensa 2" selalu utama.
+        return /^camera(?:2)?\s+0\s*,\s*facing\s+back$/i.test((label || '').trim());
+    }
+
+    function pickRearCamera(cams, preferredId = safeGet('regRearDeviceIdV2'), currentId) {
+        const list = rearCameraCandidates(cams);
+        // Pilihan manual > label utama > kamera default Android > stream saat ini.
+        return list.find(c => c.deviceId === preferredId) ||
+            list.find(c => rearLensKind(c.label) === 'main') ||
+            list.find(c => isDefaultRearLabel(c.label)) ||
+            list.find(c => c.deviceId === currentId) ||
+            list.find(c => /back|rear|belakang|environment/i.test(c.label) && rearLensKind(c.label) === 'unknown') ||
+            list[0] || null;
+    }
+
+    async function listCameraDevices() {
+        try { return await navigator.mediaDevices.enumerateDevices(); }
+        catch (e) { return []; }
+    }
+
+    async function requestRegistrationRearStream(deviceId) {
+        if (deviceId) return requestCameraStreamWithRetry('environment', deviceId);
+        // V2 hanya berisi pilihan manual yang SUDAH berhasil dibuka. Pilihan lama
+        // berbasis asumsi "Lensa 2 = utama" tidak dipakai otomatis lagi.
+        let preferredId = safeGet('regRearDeviceIdV2');
+        const first = pickRearCamera(await listCameraDevices(), preferredId);
+        let unavailableId = null;
+        if (first && (first.deviceId === preferredId || rearLensKind(first.label) === 'main' || isDefaultRearLabel(first.label))) {
+            try { return await requestCameraStreamWithRetry('environment', first.deviceId); }
+            catch (e) {
+                if (e.name !== 'NotFoundError' && e.name !== 'OverconstrainedError') throw e;
+                unavailableId = first.deviceId;
+                if (first.deviceId === preferredId) {
+                    try { localStorage.removeItem('regRearDeviceIdV2'); } catch (err) {}
+                    preferredId = null;
+                }
+            }
         }
-        return list[1] || list[0];
+
+        // Sebelum izin diberikan, browser sering menyembunyikan label/deviceId.
+        // Buka stream dahulu, lalu lakukan maksimal satu koreksi pilihan lensa.
+        const stream = await requestCameraStreamWithRetry('environment');
+        const track = stream.getVideoTracks()[0];
+        const currentId = track.getSettings ? track.getSettings().deviceId : null;
+        const selected = pickRearCamera(await listCameraDevices(), preferredId, currentId);
+        if (!selected || selected.deviceId === currentId || selected.deviceId === unavailableId ||
+            (!currentId && selected.label && selected.label === track.label) ||
+            (selected.deviceId !== preferredId && rearLensKind(selected.label) !== 'main' && !isDefaultRearLabel(selected.label))) return stream;
+
+        stream.getTracks().forEach(t => t.stop());
+        await new Promise(resolve => setTimeout(resolve, 400));
+        try { return await requestCameraStreamWithRetry('environment', selected.deviceId); }
+        catch (e) {
+            if (e.name === 'NotAllowedError' || e.name === 'SecurityError') throw e;
+            if (selected.deviceId === preferredId) {
+                try { localStorage.removeItem('regRearDeviceIdV2'); } catch (err) {}
+            }
+            // Koreksi otomatis gagal: kembalikan kamera default, pilihan manual tetap tersedia.
+            return requestCameraStreamWithRetry('environment');
+        }
     }
 
     // Mengatur zoom track video. Selalu dicoba (sebagian HP menerima zoom
@@ -966,7 +1007,7 @@ if ('serviceWorker' in navigator) {
                 const s = track.getSettings ? track.getSettings() : null;
                 if (s && typeof s.zoom === 'number') return s.zoom;
             } catch (e) {}
-            return t;
+            return null; // Tanpa getSettings().zoom, nilai aktual tidak dapat dipastikan.
         } catch (e) { return null; }
     }
 
@@ -1050,14 +1091,15 @@ if ('serviceWorker' in navigator) {
         video.playsInline = true;
         try {
             // Retry otomatis hingga 3x untuk kegagalan transien (HAL belum selesai melepas).
-            const stream = await requestCameraStreamWithRetry(facing, deviceId);
+            const stream = video.id === 'reg-video-preview' && facing === 'environment'
+                ? await requestRegistrationRearStream(deviceId)
+                : await requestCameraStreamWithRetry(facing, deviceId);
             video.srcObject = stream;
-            // Kamera belakang: kunci zoom ke 1x (hindari lensa ultra-wide 0.5x).
-            // Selalu dicoba + diverifikasi; kalau HP menolak, user tetap bisa
-            // atur manual via tombol zoom (0.5x/1x/2x).
+            // Zoom 1 relatif terhadap LENSA terpilih, bukan jaminan lensa utama.
+            // Pemilihan lensa di atas yang menghindari ultrawide bila bisa dikenali.
             if (facing === 'environment') {
                 const locked = await applyRearZoom(video, 1);
-                if (video.id === 'reg-video-preview') regZoom = (locked !== null ? locked : 1);
+                if (video.id === 'reg-video-preview') regZoom = locked;
             }
             // Jika stream tiba-tiba berhenti, tampilkan tombol "Coba Buka Kamera".
             try {
@@ -1094,7 +1136,7 @@ if ('serviceWorker' in navigator) {
     let regLiveTimer = null;
 
     let regFacingMode = 'user';
-    let regZoom = 1;
+    let regZoom = null;
 
     function syncZoomRow() {
         const row = document.getElementById('reg-zoom-row');
@@ -1113,7 +1155,7 @@ if ('serviceWorker' in navigator) {
             caps = track && track.getCapabilities ? track.getCapabilities() : null;
         } catch (e) {}
         const label = document.getElementById('reg-zoom-label');
-        if (label) label.textContent = 'aktif: ' + cur + 'x';
+        if (label) label.textContent = cur === null ? 'Zoom tidak dilaporkan browser' : 'Zoom lensa: ' + cur + 'x';
         row.querySelectorAll('button[data-zoom]').forEach(function (b) {
             const z = parseFloat(b.getAttribute('data-zoom'));
             // Sembunyikan tombol zoom di luar rentang lensa aktif
@@ -1147,45 +1189,51 @@ if ('serviceWorker' in navigator) {
     // lensa belakang agar user pilih yang benar; pilihan diingat per HP.
     async function syncLensRow() {
         const row = document.getElementById('reg-lens-row');
-        const wrap = document.getElementById('reg-lens-btns');
-        if (!row || !wrap) return;
+        const select = document.getElementById('reg-rear-lens');
+        if (!row || !select) return;
         const video = document.getElementById('reg-video-preview');
-        const live = !!(video && video.srcObject);
-        if (regFacingMode !== 'environment' || !live) { row.style.display = 'none'; return; }
-        let cams = [];
-        try {
-            const devs = await navigator.mediaDevices.enumerateDevices();
-            cams = devs
-                .filter(d => d.kind === 'videoinput')
-                .map((d, i) => ({ deviceId: d.deviceId, label: d.label || ('Kamera ' + (i + 1)) }))
-                .filter(c => !/front|depan/i.test(c.label));
-        } catch (e) {}
-        if (cams.length < 2) { row.style.display = 'none'; return; }
-        row.style.display = 'flex';
-        const stored = safeGet('regRearDeviceId');
-        wrap.innerHTML = '';
+        if (regFacingMode !== 'environment' || !regCameraActive()) { row.style.display = 'none'; return; }
+        const stream = video.srcObject;
+        const cams = rearCameraCandidates(await listCameraDevices());
+        if (video.srcObject !== stream || !regCameraActive() || regFacingMode !== 'environment') return;
+        const track = stream.getVideoTracks()[0];
+        const currentId = track.getSettings ? track.getSettings().deviceId : null;
+        row.style.display = cams.length > 1 ? 'block' : 'none';
+        select.innerHTML = '';
+        if (!cams.some(c => c.deviceId === currentId)) {
+            const option = new Option('Lensa aktif (pilihan browser)', '');
+            option.disabled = true;
+            option.selected = true;
+            select.appendChild(option);
+        }
         cams.forEach(function (c, i) {
-            const b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'btn-ui btn-ui--sm' + (stored && c.deviceId === stored ? ' btn-ui--primary' : '');
-            b.textContent = 'Lensa ' + (i + 1);
-            b.title = c.label;
-            b.onclick = function () { useRearLens(c.deviceId); };
-            wrap.appendChild(b);
+            const kind = rearLensKind(c.label);
+            const name = kind === 'main' ? 'Utama' : (kind === 'ultrawide' ? 'Ultrawide' : c.label);
+            const option = new Option('Lensa ' + (i + 1) + (name ? ' — ' + name : ''), c.deviceId);
+            option.selected = c.deviceId === currentId;
+            select.appendChild(option);
         });
+        select.disabled = regCameraBusy || regCaptureBusy;
     }
 
     async function useRearLens(deviceId) {
-        if (regCameraBusy) return;
+        if (regCameraBusy || regCaptureBusy || !deviceId || regFacingMode !== 'environment') return;
         regCameraBusy = true;
         syncRegCameraButtons();
         try {
-            safeSet('regRearDeviceId', deviceId);
             const video = document.getElementById('reg-video-preview');
-            const ok = await openCamera(video, document.getElementById('btn-snap-face'), false, 'environment', deviceId);
+            const ok = await openCamera(video, null, false, 'environment', deviceId);
             if (ok) {
+                safeSet('regRearDeviceIdV2', deviceId);
                 applyCameraAspect(video);
                 startRegLive();
+                regPhotoData = '';
+                regDescriptor = null;
+                document.getElementById('reg-img-result').style.display = 'none';
+                document.getElementById('reg-result-row').style.display = 'none';
+                document.getElementById('btn-save-reg-face').style.display = 'none';
+                document.getElementById('btn-retake-reg-face').style.display = 'none';
+                document.getElementById('reg-face-status').innerText = '';
             }
         } finally {
             regCameraBusy = false;
@@ -1243,9 +1291,8 @@ if ('serviceWorker' in navigator) {
         syncRegCameraButtons();
         const video = document.getElementById('reg-video-preview');
         video.classList.toggle('cam--rear', regFacingMode === 'environment');
-        const forced = regFacingMode === 'environment' ? safeGet('regRearDeviceId') : null;
         try {
-            const ok = await openCamera(video, document.getElementById('btn-snap-face'), false, regFacingMode, forced);
+            const ok = await openCamera(video, null, false, regFacingMode);
             if (ok) {
                 applyCameraAspect(video);
                 startRegLive();
@@ -1275,6 +1322,11 @@ if ('serviceWorker' in navigator) {
         open.style.display = active ? 'none' : 'inline-flex';
         close.style.display = active ? 'inline-flex' : 'none';
         open.disabled = close.disabled = regCameraBusy || regCaptureBusy;
+        document.getElementById('reg-rear-lens').disabled = regCameraBusy || regCaptureBusy;
+        // Satu sumber visibility: membuka ulang kamera tidak boleh menawarkan
+        // capture baru selagi foto lama belum direset lewat Ambil Ulang.
+        document.getElementById('btn-snap-face').style.display = active && !regPhotoData && !regCaptureBusy && !regCameraBusy ? 'inline-flex' : 'none';
+        document.getElementById('reg-face-status-card').style.display = active || regPhotoData ? 'block' : 'none';
         if (!active) {
             ['reg-video-preview', 'btn-snap-face', 'btn-flip-cam', 'reg-zoom-row', 'reg-lens-row'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1300,7 +1352,7 @@ if ('serviceWorker' in navigator) {
 
     async function toggleRegCamera() {
         // Cegah double-tap: abaikan ketukan selama proses ganti kamera berjalan.
-        if (regCameraBusy) return;
+        if (regCameraBusy || regCaptureBusy) return;
         const btn = document.getElementById('btn-flip-cam');
         regCameraBusy = true;
         syncRegCameraButtons();
@@ -1310,8 +1362,7 @@ if ('serviceWorker' in navigator) {
         const video = document.getElementById('reg-video-preview');
         video.classList.toggle('cam--rear', regFacingMode === 'environment');
         try {
-            const forced = regFacingMode === 'environment' ? safeGet('regRearDeviceId') : null;
-            const ok = await openCamera(video, document.getElementById('btn-snap-face'), false, regFacingMode, forced);
+            const ok = await openCamera(video, null, false, regFacingMode);
             if (ok) {
                 applyCameraAspect(video);
                 startRegLive();
@@ -1321,6 +1372,7 @@ if ('serviceWorker' in navigator) {
                 regDescriptor = null;
                 const img = document.getElementById('reg-img-result');
                 if (img) img.style.display = 'none';
+                document.getElementById('reg-result-row').style.display = 'none';
                 document.getElementById('btn-save-reg-face').style.display = 'none';
                 document.getElementById('btn-retake-reg-face').style.display = 'none';
                 const status = document.getElementById('reg-face-status');
@@ -1374,10 +1426,11 @@ if ('serviceWorker' in navigator) {
     }
 
     function retakeRegFace() {
-        if (regCaptureBusy) return;
+        if (regCaptureBusy || regCameraBusy) return;
         regPhotoData = '';
         regDescriptor = null;
         document.getElementById('reg-img-result').style.display = 'none';
+                document.getElementById('reg-result-row').style.display = 'none';
         document.getElementById('btn-save-reg-face').style.display = 'none';
         document.getElementById('btn-retake-reg-face').style.display = 'none';
         const status = document.getElementById('reg-face-status');
@@ -1389,7 +1442,7 @@ if ('serviceWorker' in navigator) {
         const video = document.getElementById('reg-video-preview');
         if (video.srcObject && video.srcObject.active) {
             video.style.display = 'block';
-            document.getElementById('btn-snap-face').style.display = 'inline-block';
+            syncRegCameraButtons();
             startRegLive();
         } else {
             // Retry kamera hanya bila stream sudah berhenti; foto tidak diambil otomatis.
@@ -1398,7 +1451,7 @@ if ('serviceWorker' in navigator) {
     }
 
     async function captureRegFace() {
-        if (regCaptureBusy) return;
+        if (regCaptureBusy || regCameraBusy || regPhotoData) return;
         const video = document.getElementById('reg-video-preview');
         const canvas = document.getElementById('reg-canvas-capture');
         const status = document.getElementById('reg-face-status');
@@ -1406,7 +1459,7 @@ if ('serviceWorker' in navigator) {
         if (typeof faceapi === 'undefined') { alert('Library face-api belum termuat, cek internet lalu refresh.'); return; }
         if (!faceModelsLoaded) { alert('Model wajah masih memuat (badge atas belum hijau). Tunggu 5-10 detik lalu coba lagi.'); if (status) status.innerText = 'Model belum siap, tunggu badge hijau.'; return; }
         await waitVideoReady(video);
-        if (regCaptureBusy) return;
+        if (regCaptureBusy || regCameraBusy || regPhotoData) return;
         if (!video.videoWidth) { alert('Kamera belum siap, tunggu 2 detik lalu coba lagi.'); return; }
         const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
         canvas.width = vw;
@@ -1417,12 +1470,14 @@ if ('serviceWorker' in navigator) {
         const imgResult = document.getElementById('reg-img-result');
         imgResult.src = regPhotoData;
         imgResult.style.display = 'block';
+        regLastDetectScore = null;
+        document.getElementById('reg-score-value').textContent = '–';
+        document.getElementById('reg-result-row').style.display = 'flex';
         regCaptureBusy = true;
         syncRegCameraButtons();
         const retake = document.getElementById('btn-retake-reg-face');
         retake.style.display = 'inline-flex';
         retake.disabled = true;
-        document.getElementById('btn-snap-face').style.display = 'none';
         document.getElementById('btn-save-reg-face').style.display = 'inline-flex';
         if (status) { status.className = 'small mt-1 text-primary'; status.innerText = 'Mengekstrak (mencoba 6 frame)...'; }
         rlog('foto ' + vw + 'x' + vh + ', mulai ekstrak 6x...');
@@ -1453,6 +1508,7 @@ if ('serviceWorker' in navigator) {
             regCaptureBusy = false;
             syncRegCameraButtons();
             retake.disabled = false;
+            document.getElementById('reg-score-value').textContent = regLastDetectScore === null ? '–' : regLastDetectScore.toFixed(2);
             // Satu adjustment setelah capture, hanya bila Simpan keluar viewport.
             requestAnimationFrame(() => {
                 const save = document.getElementById('btn-save-reg-face');
@@ -1578,11 +1634,6 @@ if ('serviceWorker' in navigator) {
             .then(data => {
                 karyawanCache = data;
                 karyawanTableRendered = false;
-                const select = document.getElementById('select-karyawan');
-                const selected = select.value;
-                const options = data.map(k => `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`).join('');
-                select.innerHTML = '<option value="">-- Pilih Nama Karyawan Manual --</option>' + options;
-                select.value = selected;
                 renderKaryawanAdmin();
                 return data;
             })
@@ -1817,10 +1868,9 @@ if ('serviceWorker' in navigator) {
     let absenSubmitting = false;
     async function submitAbsen(aksi) {
         if (absenSubmitting) return;
-        const manualId = document.getElementById('select-karyawan').value;
-        const karyawan_id = matchedKaryawan ? matchedKaryawan.id : manualId;
+        const karyawan_id = matchedKaryawan ? matchedKaryawan.id : null;
         if (!karyawan_id) {
-            showAttendanceToast('warning', 'fa-circle-info', 'Scan wajah dulu atau pilih nama manual!');
+            showAttendanceToast('warning', 'fa-circle-info', 'Scan wajah dulu! Wajah harus dikenali otomatis.');
             return;
         }
 
@@ -1906,6 +1956,7 @@ if ('serviceWorker' in navigator) {
             regPhotoData = "";
             regDescriptor = null;
             document.getElementById('reg-img-result').style.display = 'none';
+                document.getElementById('reg-result-row').style.display = 'none';
             document.getElementById('btn-save-reg-face').style.display = 'none';
             document.getElementById('btn-retake-reg-face').style.display = 'none';
             document.getElementById('reg-face-status').innerText = '';
@@ -1929,7 +1980,7 @@ if ('serviceWorker' in navigator) {
     // Mulai setelah seluruh cache/state halaman terinisialisasi; kamera tidak
     // boleh tertahan oleh error inisialisasi data admin.
     initAutoKioskCamera();
-    loadKaryawan(); // dropdown manual kiosk diisi saat awal
+    loadKaryawan(); // dropdown pendaftaran + tabel karyawan diisi saat awal
     loadHariIni();
     tickClock();
     setInterval(tickClock, 1000);

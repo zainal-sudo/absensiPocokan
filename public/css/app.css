@@ -208,12 +208,14 @@ code {
 
 .nav-rail::-webkit-scrollbar { display: none; }
 
-.nav-rail .nav-item { flex: 0 0 auto; }
+.nav-rail .nav-item { flex: 1 1 0; min-width: 0; }
 
 .nav-rail .nav-link {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    width: 100%;
     min-height: 44px;
     padding: 0 14px;
     border-radius: var(--r-md);
@@ -424,11 +426,86 @@ code {
     margin: 10px 0;
 }
 
+/* Preview + tombol ganti kamera melayang di dalamnya */
+.registration-preview {
+    position: relative;
+}
+
+#btn-flip-cam.reg-flip-overlay {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    min-height: 0;
+    padding: 4px 10px;
+    gap: 5px;
+    font-size: 11px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .92);
+    box-shadow: var(--shadow-sm);
+}
+
+#btn-flip-cam.reg-flip-overlay i { font-size: 11px; }
+
+/* Hasil foto mepet kiri + skor di kanan */
+.registration-result {
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.registration-result #reg-img-result {
+    margin: 0;
+}
+
+.registration-score {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+}
+
+#reg-score-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--gray-900);
+    font-variant-numeric: tabular-nums;
+}
+
+.registration-score__label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--gray-500);
+}
+
+/* Ruang status tetap: perubahan panjang teks tidak menggeser tombol capture. */
+.registration-status {
+    height: 3.5rem;
+    margin-top: 6px;
+    padding: 5px 10px;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    background: var(--brand-50);
+    text-align: left;
+}
+
+.registration-status #reg-face-status {
+    margin: 0 !important;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+
 .registration-result-actions {
     display: grid;
     grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
     gap: 8px;
 }
+
+.registration-lenses { margin: 0 0 12px; text-align: left; }
+.registration-lenses .form-select-ui { width: 100%; min-width: 0; }
 
 .registration-result-actions > .btn-ui {
     min-width: 0;
@@ -1180,64 +1257,19 @@ tr#att-more-row {
     /* Aksi utama: [MASUK] [PULANG] tepat setelah kamera */
     #tab-kiosk .actions { margin-top: 6px; }
 
-    /* Baris aksi sekunder compact: Scan Ulang | Pilih manual (2 kolom) */
+    /* Baris aksi sekunder: Scan Ulang */
     #tab-kiosk .kiosk-secondary {
-        position: relative;
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         margin-top: 6px;
     }
     #tab-kiosk .kiosk-secondary__scan {
-        flex: 1 1 45%;
+        flex: 1 1 100%;
         min-width: 0;
         margin: 0;
     }
     #tab-kiosk .kiosk-secondary__scan .btn-ui { width: 100%; }
-    #tab-kiosk .kiosk-secondary .manual {
-        flex: 1 1 45%;
-        min-width: 0;
-        margin: 0;
-        padding: 0;
-        border: 0;
-    }
-    #tab-kiosk .manual__toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        width: 100%;
-        min-height: 40px;
-        padding: 8px 10px;
-        border: 1px dashed var(--gray-300);
-        border-radius: var(--r-md);
-        background: transparent;
-        color: var(--gray-500);
-        font-size: 12.5px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    #tab-kiosk .manual__toggle i { font-size: 12px; color: var(--gray-400); }
-    #tab-kiosk .manual__toggle:hover { background: var(--gray-50); color: var(--brand-600); }
-    #tab-kiosk .manual__body { display: none; }
-    /* Dropdown manual: panel melayang MEMBUKA KE ATAS di atas baris (aksinya
-       di bawahnya), tidak menambah tinggi card & tidak keluar viewport. */
-    #tab-kiosk .manual__body.is-open {
-        display: block;
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: calc(100% + 6px);
-        z-index: 20;
-        margin: 0;
-        padding: 12px;
-        max-height: min(46dvh, 420px);
-        overflow-y: auto;
-        background: #fff;
-        border: 1px solid var(--gray-200);
-        border-radius: var(--r-md);
-        box-shadow: var(--shadow-sm);
-    }
 
     /* Tombol "Absensi Hari Ini · X/Y" menggantikan card daftar panjang di HP */
     #tab-kiosk .att-summary-btn { display: flex; margin-top: 6px; }
