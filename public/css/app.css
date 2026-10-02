@@ -387,6 +387,77 @@ code {
 
 #hasil-scan { margin: 14px 0 0; text-align: left; }
 
+/* Satu anchor untuk preview + semua aksi registrasi, di bawah sticky header. */
+.registration-camera-focus {
+    scroll-margin-top: 80px;
+    text-align: center;
+}
+
+.registration-camera-launch {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+}
+
+.registration-camera-launch > .btn-ui {
+    min-width: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.registration-camera-launch .fa-camera { flex-shrink: 0; }
+
+.registration-camera-focus #reg-video-preview {
+    margin-top: 0;
+    /* Kedua dimensi auto: ukuran mengikuti rasio stream, tanpa crop/letterbox. */
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.registration-camera-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 10px 0;
+}
+
+.registration-result-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.registration-result-actions > .btn-ui {
+    min-width: 0;
+    min-height: var(--tap);
+    margin-top: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.registration-result-actions .fa-solid { flex-shrink: 0; }
+
+#btn-save-reg-face { scroll-margin-bottom: 12px; }
+
+@media (max-width: 767.98px) {
+    .registration-camera-focus { scroll-margin-top: 64px; }
+    .registration-camera-focus #reg-video-preview {
+        /* Portrait boleh lebih tinggi; lebar ikut mengecil secara proporsional. */
+        max-height: 52vh;
+        max-height: min(440px, 52svh);
+    }
+    .registration-camera-focus #reg-img-result {
+        max-height: 96px;
+        max-width: 100%;
+        object-fit: contain;
+        margin-top: 8px;
+    }
+    .registration-camera-focus #reg-debug-log { max-height: 64px !important; }
+}
+
 /* Baris "tampilkan lagi" — di mobile tetap polos, bukan kartu */
 tr#att-more-row {
     border: 0 !important;

@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-    <link rel="stylesheet" href="/css/app.css?v=att-filter-1">
+    <link rel="stylesheet" href="/css/app.css?v=reg-camera-focus-4">
 </head>
 <body>
 
@@ -201,17 +201,27 @@
                             <!-- Pendaftaran Wajah -->
                             <div class="field" style="text-align:center">
                                 <label class="form-label-ui" style="text-align:left">Foto Wajah Validasi</label>
-                                <button type="button" class="btn-ui btn-ui--sm" onclick="startRegCamera()"><i class="fa-solid fa-camera"></i> Buka Kamera Pendaftaran</button>
-                                <button type="button" class="btn-ui btn-ui--sm" id="btn-flip-cam" onclick="toggleRegCamera()" style="display:none;margin-top:8px"><i class="fa-solid fa-rotate"></i> <span id="btn-flip-cam-label">Kamera Belakang</span></button>
+                                <div class="registration-camera-launch">
+                                    <button type="button" id="btn-open-reg-camera" class="btn-ui btn-ui--sm btn-ui--primary" onclick="startRegCamera()"><i class="fa-solid fa-camera"></i> <span>Buka Kamera Pendaftaran</span></button>
+                                    <button type="button" id="btn-close-reg-camera" class="btn-ui btn-ui--sm" onclick="closeRegCamera()" style="display:none;"><i class="fa-solid fa-video-slash"></i> <span>Tutup Kamera Pendaftaran</span></button>
+                                    <button type="button" id="btn-reg-diagnostics" class="btn-ui btn-ui--sm" onclick="toggleRegDiagnostics()" aria-controls="reg-debug-log" aria-expanded="false"><i class="fa-solid fa-stethoscope"></i> <span id="reg-diagnostics-label">Diagnosa</span></button>
+                                </div>
+                            </div>
+                            <div id="registration-camera-section" class="registration-camera-focus" role="region" aria-label="Kamera dan aksi pendaftaran wajah">
                                 <video id="reg-video-preview" autoplay playsinline muted></video>
                                 <canvas id="reg-canvas-capture" style="display:none;"></canvas>
-                                <button type="button" class="btn-ui btn-ui--sm" id="btn-snap-face" onclick="captureRegFace()" style="display:none;margin-top:10px"><i class="fa-solid fa-check"></i> Ambil Foto Wajah</button>
-                                <button type="button" class="btn-ui btn-ui--sm" onclick="diagnosaWajah()"><i class="fa-solid fa-stethoscope"></i> Diagnosa</button>
+                                <div class="registration-camera-controls">
+                                    <button type="button" class="btn-ui btn-ui--sm btn-ui--primary" id="btn-snap-face" onclick="captureRegFace()" style="display:none;"><i class="fa-solid fa-check"></i> Ambil Foto Wajah</button>
+                                    <button type="button" class="btn-ui btn-ui--sm" id="btn-flip-cam" onclick="toggleRegCamera()" style="display:none;"><i class="fa-solid fa-rotate"></i> <span id="btn-flip-cam-label">Kamera Belakang</span></button>
+                                </div>
                                 <img id="reg-img-result" alt="Wajah Karyawan">
                                 <div id="reg-face-status" class="manual__hint" style="text-align:left"></div>
                                 <pre id="reg-debug-log" class="text-start bg-dark text-light rounded p-2 mt-2" style="font-size:10px;max-height:150px;overflow-y:auto;display:none;"></pre>
+                                <div class="registration-result-actions">
+                                    <button type="button" id="btn-retake-reg-face" class="btn-ui btn-ui--sm" onclick="retakeRegFace()" style="display:none;"><i class="fa-solid fa-camera-rotate"></i> <span>Ambil Ulang Foto Wajah</span></button>
+                                    <button type="submit" id="btn-save-reg-face" class="btn-ui btn-ui--primary" style="display:none;"><i class="fa-solid fa-floppy-disk"></i> <span>Daftarkan Wajah</span></button>
+                                </div>
                             </div>
-                            <button type="submit" class="btn-ui btn-ui--primary btn-ui--block"><i class="fa-solid fa-floppy-disk"></i> Simpan / Daftarkan Wajah</button>
                         </form>
                     </div>
                 </div>
@@ -449,25 +459,40 @@ if ('serviceWorker' in navigator) {
         return video.videoWidth > 0;
     }
 
+    function setRegDiagnosticsOpen(open) {
+        document.getElementById('reg-debug-log').style.display = open ? 'block' : 'none';
+        document.getElementById('btn-reg-diagnostics').setAttribute('aria-expanded', String(open));
+        document.getElementById('reg-diagnostics-label').textContent = open ? 'Tutup Diagnosa' : 'Diagnosa';
+    }
+
+    function toggleRegDiagnostics() {
+        const open = document.getElementById('btn-reg-diagnostics').getAttribute('aria-expanded') !== 'true';
+        setRegDiagnosticsOpen(open);
+        if (open) {
+            document.getElementById('reg-debug-log').textContent = '';
+            diagnosaWajah();
+        }
+    }
+
     function rlog(msg) {
         // Debug hanya untuk flow registrasi yang AKTIF (tab kiosk tidak aktif).
         // Auto-recognition kiosk memanggil detectDescriptor → rlog harus no-op
         // agar tidak menulis DOM/console setiap attempt (tiap 1,2 dtk).
         if (document.querySelector('#tab-kiosk.active')) return;
+        // Capture/deteksi tidak boleh membuka kembali panel yang ditutup user.
+        if (document.getElementById('btn-reg-diagnostics').getAttribute('aria-expanded') !== 'true') return;
         console.log('[wajah]', msg);
         const pre = document.getElementById('reg-debug-log');
-        if (pre) { pre.style.display = 'block'; pre.textContent += new Date().toLocaleTimeString('id-ID') + ' ' + msg + '\n'; pre.scrollTop = pre.scrollHeight; }
+        if (pre) { pre.textContent += new Date().toLocaleTimeString('id-ID') + ' ' + msg + '\n'; pre.scrollTop = pre.scrollHeight; }
     }
 
     async function diagnosaWajah() {
-        const pre = document.getElementById('reg-debug-log');
-        if (pre) { pre.style.display = 'block'; pre.textContent = ''; }
         rlog('secureContext=' + window.isSecureContext + ' url=' + location.href);
         rlog('faceapi ada=' + (typeof faceapi !== 'undefined') + ' modelSiap=' + faceModelsLoaded);
         rlog('tiny=' + !!(typeof faceapi !== 'undefined' && faceapi.nets.tinyFaceDetector.isLoaded) + ' landmark=' + !!(typeof faceapi !== 'undefined' && faceapi.nets.faceLandmark68Net.isLoaded) + ' recog=' + !!(typeof faceapi !== 'undefined' && faceapi.nets.faceRecognitionNet.isLoaded));
         const v = document.getElementById('reg-video-preview');
         rlog('video src=' + !!v.srcObject + ' width=' + v.videoWidth + 'x' + v.videoHeight + ' readyState=' + v.readyState);
-        if (!v.srcObject) { rlog('KESIMPULAN: kamera belum dibuka. Klik Buka Kamera dulu.'); return; }
+        if (!regCameraActive()) { rlog('KESIMPULAN: kamera belum dibuka. Klik Buka Kamera dulu.'); return; }
         try {
             const track = v.srcObject.getVideoTracks()[0];
             const s = track && track.getSettings ? track.getSettings() : null;
@@ -1038,6 +1063,7 @@ if ('serviceWorker' in navigator) {
                 stream.getVideoTracks().forEach(function (t) {
                     t.addEventListener('ended', function () {
                         if (video.id === 'video-preview') syncKioskCameraButton();
+                        if (video.id === 'reg-video-preview') syncRegCameraButtons();
                     });
                 });
             } catch (e) {}
@@ -1151,6 +1177,7 @@ if ('serviceWorker' in navigator) {
     async function useRearLens(deviceId) {
         if (regCameraBusy) return;
         regCameraBusy = true;
+        syncRegCameraButtons();
         try {
             safeSet('regRearDeviceId', deviceId);
             const video = document.getElementById('reg-video-preview');
@@ -1161,6 +1188,7 @@ if ('serviceWorker' in navigator) {
             }
         } finally {
             regCameraBusy = false;
+            syncRegCameraButtons();
             syncRegFlipButton();
             syncZoomRow();
             syncLensRow();
@@ -1182,32 +1210,99 @@ if ('serviceWorker' in navigator) {
                 if (labeled.length > 0 && labeled.length < 2) show = false;
             }
         } catch (e) {}
-        btn.style.display = show ? 'inline-flex' : 'none';
+        btn.style.display = show && regCameraActive() ? 'inline-flex' : 'none';
         if (label) label.textContent = regFacingMode === 'user' ? 'Kamera Belakang' : 'Kamera Depan';
     }
 
-    function startRegCamera() {
-        const video = document.getElementById('reg-video-preview');
-        video.classList.toggle('cam--rear', regFacingMode === 'environment');
-        const forced = regFacingMode === 'environment' ? safeGet('regRearDeviceId') : null;
-        openCamera(video, document.getElementById('btn-snap-face'), false, regFacingMode, forced).then(ok => {
-            if (ok) {
-                applyCameraAspect(video);
-                startRegLive();
-                syncRegFlipButton();
-                syncZoomRow();
-                syncLensRow();
-            }
+    async function focusRegistrationCamera(video) {
+        const stream = video.srcObject;
+        // Tunggu frame tersedia, bukan sekadar getUserMedia berhasil.
+        if (!await waitVideoReady(video)) return;
+        requestAnimationFrame(() => {
+            const section = document.getElementById('registration-camera-section');
+            if (video.srcObject !== stream || !stream || !stream.active || video.paused ||
+                !video.getClientRects().length || !section.getClientRects().length) return;
+            // Satu pengecekan per klik; tidak dipanggil dari loop deteksi/resize.
+            const rect = section.getBoundingClientRect();
+            const offset = parseFloat(getComputedStyle(section).scrollMarginTop) || 0;
+            // Di HP, posisikan preview dekat header agar ada ruang untuk hasil
+            // foto/status setelah capture. Desktop tidak perlu bergeser bila fit.
+            if (window.matchMedia('(min-width: 768px)').matches &&
+                rect.top >= offset && rect.bottom <= document.documentElement.clientHeight) return;
+            section.scrollIntoView({
+                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+                block: 'start'
+            });
         });
     }
 
+    async function startRegCamera() {
+        if (regCameraBusy || regCaptureBusy || regCameraActive()) return;
+        regCameraBusy = true;
+        syncRegCameraButtons();
+        const video = document.getElementById('reg-video-preview');
+        video.classList.toggle('cam--rear', regFacingMode === 'environment');
+        const forced = regFacingMode === 'environment' ? safeGet('regRearDeviceId') : null;
+        try {
+            const ok = await openCamera(video, document.getElementById('btn-snap-face'), false, regFacingMode, forced);
+            if (ok) {
+                applyCameraAspect(video);
+                startRegLive();
+                await syncRegFlipButton();
+                syncZoomRow();
+                await syncLensRow();
+                focusRegistrationCamera(video);
+            }
+        } finally {
+            regCameraBusy = false;
+            syncRegCameraButtons();
+        }
+    }
+
     let regCameraBusy = false;
+    let regCaptureBusy = false;
+
+    function regCameraActive() {
+        const stream = document.getElementById('reg-video-preview').srcObject;
+        return !!(stream && stream.getVideoTracks().some(track => track.readyState === 'live'));
+    }
+
+    function syncRegCameraButtons() {
+        const active = regCameraActive();
+        const open = document.getElementById('btn-open-reg-camera');
+        const close = document.getElementById('btn-close-reg-camera');
+        open.style.display = active ? 'none' : 'inline-flex';
+        close.style.display = active ? 'inline-flex' : 'none';
+        open.disabled = close.disabled = regCameraBusy || regCaptureBusy;
+        if (!active) {
+            ['reg-video-preview', 'btn-snap-face', 'btn-flip-cam', 'reg-zoom-row', 'reg-lens-row'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+    }
+
+    // Event stream saja, tanpa polling atau pengukuran layout.
+    ['playing', 'emptied'].forEach(event => {
+        document.getElementById('reg-video-preview').addEventListener(event, syncRegCameraButtons);
+    });
+
+    function closeRegCamera() {
+        if (regCameraBusy || regCaptureBusy) return;
+        stopRegLive();
+        stopStream(document.getElementById('reg-video-preview'));
+        syncRegCameraButtons();
+        setRegDiagnosticsOpen(false);
+        // Menutup kamera tidak membuang foto yang sudah diambil.
+        if (!regPhotoData) document.getElementById('reg-face-status').innerText = '';
+    }
 
     async function toggleRegCamera() {
         // Cegah double-tap: abaikan ketukan selama proses ganti kamera berjalan.
         if (regCameraBusy) return;
         const btn = document.getElementById('btn-flip-cam');
         regCameraBusy = true;
+        syncRegCameraButtons();
         if (btn) btn.style.opacity = '0.5';
         const prev = regFacingMode;
         regFacingMode = prev === 'user' ? 'environment' : 'user';
@@ -1225,6 +1320,8 @@ if ('serviceWorker' in navigator) {
                 regDescriptor = null;
                 const img = document.getElementById('reg-img-result');
                 if (img) img.style.display = 'none';
+                document.getElementById('btn-save-reg-face').style.display = 'none';
+                document.getElementById('btn-retake-reg-face').style.display = 'none';
                 const status = document.getElementById('reg-face-status');
                 if (status) status.innerText = '';
             } else {
@@ -1236,6 +1333,7 @@ if ('serviceWorker' in navigator) {
             }
         } finally {
             regCameraBusy = false;
+            syncRegCameraButtons();
             if (btn) btn.style.opacity = '';
             syncRegFlipButton();
             syncZoomRow();
@@ -1255,8 +1353,10 @@ if ('serviceWorker' in navigator) {
         regLiveTimer = setInterval(async () => {
             if (!video.srcObject || !faceModelsLoaded || typeof faceapi === 'undefined') return;
             if (!video.videoWidth) return;
+            const stream = video.srcObject;
             try {
                 const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 }));
+                if (video.srcObject !== stream || !regCameraActive()) return;
                 if (d) {
                     const w = Math.round(d.box.width), h = Math.round(d.box.height);
                     const frac = (d.box.width * d.box.height) / (video.videoWidth * video.videoHeight);
@@ -1272,7 +1372,32 @@ if ('serviceWorker' in navigator) {
         }, 800);
     }
 
+    function retakeRegFace() {
+        if (regCaptureBusy) return;
+        regPhotoData = '';
+        regDescriptor = null;
+        document.getElementById('reg-img-result').style.display = 'none';
+        document.getElementById('btn-save-reg-face').style.display = 'none';
+        document.getElementById('btn-retake-reg-face').style.display = 'none';
+        const status = document.getElementById('reg-face-status');
+        status.className = 'manual__hint';
+        status.innerText = 'Posisikan wajah kembali, lalu klik Ambil Foto Wajah.';
+        const debug = document.getElementById('reg-debug-log');
+        debug.textContent = '';
+        setRegDiagnosticsOpen(false);
+        const video = document.getElementById('reg-video-preview');
+        if (video.srcObject && video.srcObject.active) {
+            video.style.display = 'block';
+            document.getElementById('btn-snap-face').style.display = 'inline-block';
+            startRegLive();
+        } else {
+            // Retry kamera hanya bila stream sudah berhenti; foto tidak diambil otomatis.
+            startRegCamera();
+        }
+    }
+
     async function captureRegFace() {
+        if (regCaptureBusy) return;
         const video = document.getElementById('reg-video-preview');
         const canvas = document.getElementById('reg-canvas-capture');
         const status = document.getElementById('reg-face-status');
@@ -1280,6 +1405,7 @@ if ('serviceWorker' in navigator) {
         if (typeof faceapi === 'undefined') { alert('Library face-api belum termuat, cek internet lalu refresh.'); return; }
         if (!faceModelsLoaded) { alert('Model wajah masih memuat (badge atas belum hijau). Tunggu 5-10 detik lalu coba lagi.'); if (status) status.innerText = 'Model belum siap, tunggu badge hijau.'; return; }
         await waitVideoReady(video);
+        if (regCaptureBusy) return;
         if (!video.videoWidth) { alert('Kamera belum siap, tunggu 2 detik lalu coba lagi.'); return; }
         const vw = video.videoWidth || 640, vh = video.videoHeight || 480;
         canvas.width = vw;
@@ -1290,6 +1416,13 @@ if ('serviceWorker' in navigator) {
         const imgResult = document.getElementById('reg-img-result');
         imgResult.src = regPhotoData;
         imgResult.style.display = 'block';
+        regCaptureBusy = true;
+        syncRegCameraButtons();
+        const retake = document.getElementById('btn-retake-reg-face');
+        retake.style.display = 'inline-flex';
+        retake.disabled = true;
+        document.getElementById('btn-snap-face').style.display = 'none';
+        document.getElementById('btn-save-reg-face').style.display = 'inline-flex';
         if (status) { status.className = 'small mt-1 text-primary'; status.innerText = 'Mengekstrak (mencoba 6 frame)...'; }
         rlog('foto ' + vw + 'x' + vh + ', mulai ekstrak 6x...');
         try {
@@ -1313,8 +1446,24 @@ if ('serviceWorker' in navigator) {
             }
             regDescriptor = Array.from(desc);
             stopRegLive();
-            if (status) { status.className = 'small mt-1 text-success'; status.innerText = 'Ciri wajah OK (' + regDescriptor.length + ' titik), siap disimpan. Klik Simpan!'; }
+            if (status) { status.className = 'small mt-1 text-success'; status.innerText = 'Ciri wajah OK (' + regDescriptor.length + ' titik), siap disimpan. Klik Daftarkan Wajah!'; }
         } catch (e) { console.error(e); regDescriptor = null; if (status) status.innerText = 'Gagal ekstrak wajah: ' + e.message; }
+        finally {
+            regCaptureBusy = false;
+            syncRegCameraButtons();
+            retake.disabled = false;
+            // Satu adjustment setelah capture, hanya bila Simpan keluar viewport.
+            requestAnimationFrame(() => {
+                const save = document.getElementById('btn-save-reg-face');
+                if (!save.getClientRects().length) return;
+                if (save.getBoundingClientRect().bottom > document.documentElement.clientHeight) {
+                    save.scrollIntoView({
+                        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+                        block: 'nearest'
+                    });
+                }
+            });
+        }
     }
 
     function tickClock() {
@@ -1751,11 +1900,15 @@ if ('serviceWorker' in navigator) {
             regPhotoData = "";
             regDescriptor = null;
             document.getElementById('reg-img-result').style.display = 'none';
+            document.getElementById('btn-save-reg-face').style.display = 'none';
+            document.getElementById('btn-retake-reg-face').style.display = 'none';
             document.getElementById('reg-face-status').innerText = '';
             const regVideo = document.getElementById('reg-video-preview');
             if(regVideo.srcObject) regVideo.srcObject.getTracks().forEach(t => t.stop());
             regVideo.style.display = 'none';
             document.getElementById('btn-snap-face').style.display = 'none';
+            syncRegCameraButtons();
+            setRegDiagnosticsOpen(false);
             // Segarkan hanya data yang berubah, tanpa memuat ulang tab lain.
             await Promise.all([loadKaryawan(true), loadFaceDB()]);
             alert('Wajah berhasil didaftarkan! Sekarang bisa scan otomatis.');
