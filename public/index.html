@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
-    <link rel="stylesheet" href="/css/app.css?v=reg-result-1">
+    <link rel="stylesheet" href="/css/app.css?v=registration-auto-1">
 </head>
 <body>
 
@@ -167,10 +167,17 @@
                         </div>
                         <div class="alert alert-warning">Buat atau aktifkan karyawan di Master Karyawan Pocokan terlebih dahulu. Pilih karyawan aktif di bawah, lalu daftarkan wajahnya.</div>
                         <div class="field">
-                            <label class="form-label-ui" for="k-existing">Karyawan Aktif Pocokan</label>
-                            <select class="form-select-ui" id="k-existing">
+                            <label class="form-label-ui" for="employee-picker-toggle">Karyawan Aktif Pocokan</label>
+                            <!-- Nilai select tetap dipakai flow pendaftaran existing. -->
+                            <select id="k-existing" style="display:none;" aria-hidden="true" tabindex="-1">
                                 <option value="">— Pilih karyawan aktif —</option>
                             </select>
+                            <div id="employee-picker" class="employee-picker">
+                                <button id="employee-picker-toggle" type="button" class="form-select-ui employee-picker__toggle" aria-expanded="false" aria-controls="employee-picker-panel" disabled>
+                                    <span id="employee-picker-label">Memuat karyawan aktif…</span>
+                                </button>
+                            </div>
+                            <p id="reg-existing-face-hint" class="registration-reregister-hint" hidden>Wajah sudah terdaftar. Pendaftaran ulang akan mengganti foto dan ciri wajah lama.</p>
                         </div>
                         <form onsubmit="daftarkanWajah(event)">
                             <!-- Pendaftaran Wajah -->
@@ -186,6 +193,10 @@
                                 <div id="reg-lens-row" class="registration-lenses" style="display:none;">
                                     <select id="reg-rear-lens" class="form-select-ui" onchange="useRearLens(this.value)" aria-label="Lensa kamera belakang"></select>
                                 </div>
+                                <div class="registration-auto">
+                                    <label for="reg-auto-capture"><input type="checkbox" id="reg-auto-capture" checked> Jepret otomatis</label>
+                                    <span>Skor deteksi &gt;0,90 dan wajah stabil. Tetap bisa jepret manual.</span>
+                                </div>
                                 <div class="registration-preview">
                                     <video id="reg-video-preview" autoplay playsinline muted></video>
                                     <button type="button" class="btn-ui btn-ui--sm reg-flip-overlay" id="btn-flip-cam" onclick="toggleRegCamera()" style="display:none;"><i class="fa-solid fa-rotate"></i> <span id="btn-flip-cam-label">Kamera Belakang</span></button>
@@ -200,42 +211,32 @@
                                 <div id="reg-result-row" class="registration-result" style="display:none;">
                                     <img id="reg-img-result" alt="Wajah Karyawan">
                                     <div class="registration-score">
+                                        <span id="reg-result-name" class="registration-score__name">–</span>
                                         <span id="reg-score-value">–</span>
-                                        <span class="registration-score__label">Skor deteksi</span>
+                                        <span class="registration-score__label">Kejelasan wajah</span>
+                                        <span class="registration-score__hint">Mendekati 1,00 makin baik · bukan % kecocokan identitas</span>
                                     </div>
                                 </div>
                                 <pre id="reg-debug-log" class="text-start bg-dark text-light rounded p-2 mt-2" style="font-size:10px;max-height:150px;overflow-y:auto;display:none;"></pre>
                                 <div class="registration-result-actions">
                                     <button type="button" id="btn-retake-reg-face" class="btn-ui btn-ui--sm" onclick="retakeRegFace()" style="display:none;"><i class="fa-solid fa-camera-rotate"></i> <span>Ambil Ulang<br>Foto Wajah</span></button>
-                                    <button type="submit" id="btn-save-reg-face" class="btn-ui btn-ui--primary" style="display:none;"><i class="fa-solid fa-floppy-disk"></i> <span>Daftarkan Wajah</span></button>
+                                    <button type="submit" id="btn-save-reg-face" class="btn-ui btn-ui--primary" style="display:none;"><i class="fa-solid fa-floppy-disk"></i> <span id="reg-save-label">Daftarkan Wajah</span></button>
                                 </div>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <!-- Tabel Data Karyawan -->
+                <!-- Daftar lengkap dibuka di popup agar halaman tetap ringkas. -->
                 <div class="col-12 col-lg-7 col-xl-8">
                     <div class="card-kiosk">
                         <div class="card-head">
                             <h2 class="card-title">Daftar Karyawan Aktif Pocokan</h2>
                         </div>
-                        <div class="table-scroll">
-                            <table class="table-ui">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Wajah</th>
-                                        <th scope="col">Kode</th>
-                                        <th scope="col">Nama Karyawan</th>
-                                        <th scope="col">Bagian</th>
-                                        <th scope="col">Pabrik</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="table-karyawan">
-                                    <!-- Populated -->
-                                </tbody>
-                            </table>
-                        </div>
+                        <p class="card-sub" id="employee-list-summary" role="status">Memuat karyawan aktif…</p>
+                        <button type="button" class="btn-ui btn-ui--primary btn-ui--block" id="employee-list-open" disabled aria-haspopup="dialog" aria-controls="employee-list-modal">
+                            <i class="fa-solid fa-users"></i> Buka Daftar Karyawan Aktif
+                        </button>
                     </div>
                 </div>
             </div>
@@ -297,6 +298,83 @@
         </div>
     </div>
 </main>
+
+<div class="modal fade" id="employee-list-modal" tabindex="-1" aria-labelledby="employee-list-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-fullscreen-md-down modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employee-list-title">Daftar Karyawan Aktif Pocokan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup daftar karyawan"></button>
+            </div>
+            <div class="modal-body">
+                <div class="employee-list-filters">
+                    <form class="employee-list-search" id="employee-list-search-form" role="search">
+                        <label class="form-label-ui" for="employee-list-search">Cari nama / NIK</label>
+                        <div class="employee-list-search-row">
+                            <input type="search" id="employee-list-search" class="form-control-ui" placeholder="Ketik nama atau kode karyawan…" autocomplete="off" enterkeyhint="search" aria-controls="employee-list-results">
+                            <button type="submit" class="btn-ui btn-ui--primary">Cari</button>
+                        </div>
+                    </form>
+                    <div>
+                        <label class="form-label-ui" for="employee-list-factory">Pabrik</label>
+                        <select id="employee-list-factory" class="form-select-ui"><option value="">Semua pabrik</option></select>
+                    </div>
+                    <div>
+                        <label class="form-label-ui" for="employee-list-face">Status wajah</label>
+                        <select id="employee-list-face" class="form-select-ui">
+                            <option value="">Semua status</option>
+                            <option value="registered">Sudah terdaftar</option>
+                            <option value="unregistered">Belum terdaftar</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label-ui" for="employee-list-sort">Urutkan</label>
+                        <select id="employee-list-sort" class="form-select-ui">
+                            <option value="asc">Nama A–Z</option>
+                            <option value="desc">Nama Z–A</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="card-sub" id="employee-list-count" role="status" aria-live="polite"></p>
+                <div class="table-scroll" id="employee-list-results" tabindex="-1" role="region" aria-label="Hasil pencarian karyawan aktif">
+                    <table class="table-ui">
+                        <thead><tr><th scope="col">Wajah</th><th scope="col">Kode / NIK</th><th scope="col">Nama Karyawan</th><th scope="col">Bagian</th><th scope="col">Pabrik</th></tr></thead>
+                        <tbody id="table-karyawan"></tbody>
+                    </table>
+                </div>
+                <button type="button" class="btn-ui btn-ui--block btn-ui--sm" id="employee-list-more" hidden>Tampilkan lagi</button>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ui btn-ui--primary btn-ui--block" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="employee-picker-panel" tabindex="-1" aria-labelledby="employee-picker-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employee-picker-title">Pilih Karyawan Aktif</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup pilihan karyawan"></button>
+            </div>
+            <div class="modal-body employee-picker__panel">
+                <label class="visually-hidden" for="employee-search">Cari nama karyawan</label>
+                <input id="employee-search" type="search" class="form-control-ui" placeholder="Cari nama karyawan…" autocomplete="off">
+                <div class="employee-picker__toolbar">
+                    <span id="employee-picker-count" class="manual__hint" role="status" aria-live="polite"></span>
+                    <label class="visually-hidden" for="employee-sort">Urutkan nama karyawan</label>
+                    <select id="employee-sort" class="form-select-ui">
+                        <option value="asc">Nama A–Z</option>
+                        <option value="desc">Nama Z–A</option>
+                    </select>
+                </div>
+                <div id="employee-picker-results" class="employee-picker__results" role="group" aria-label="Hasil pencarian karyawan aktif"></div>
+                <button id="employee-picker-more" type="button" class="btn-ui btn-ui--sm btn-ui--block" hidden>Tampilkan lebih banyak</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- MODAL: daftar Absensi Hari Ini (mobile). Renderer/attRowsCache/pagination LAMA dipakai ulang. -->
 <div class="modal fade" id="att-modal" tabindex="-1" aria-labelledby="att-modal-title" aria-hidden="true">
@@ -1396,34 +1474,111 @@ if ('serviceWorker' in navigator) {
 
     function stopRegLive() {
         if (regLiveTimer) { clearInterval(regLiveTimer); regLiveTimer = null; }
+        regLiveEpoch++;
+        resetRegAutoCapture();
     }
 
-    // Deteksi live tiap 800ms: kasih tahu user kapan wajah sudah "terkunci"
+    const REG_AUTO_CAPTURE_SCORE = 0.90;
+    const REG_AUTO_CAPTURE_STABLE_MS = 800;
+    let regLiveEpoch = 0;
+    let regAutoCaptureState = null;
+
+    function resetRegAutoCapture() {
+        regAutoCaptureState = null;
+    }
+
+    function canAutoCaptureRegFace() {
+        return document.getElementById('reg-auto-capture').checked &&
+            !!document.getElementById('k-existing').value &&
+            document.getElementById('tab-karyawan').classList.contains('active') &&
+            !document.getElementById('employee-picker-panel').classList.contains('show') &&
+            !document.hidden && regCameraActive() && !regCameraBusy && !regCaptureBusy && !regPhotoData;
+    }
+
+    function updateRegAutoCapture(detection, video, now) {
+        const box = detection && detection.box;
+        const area = box ? box.width * box.height / (video.videoWidth * video.videoHeight) : 0;
+        const x = box ? (box.x + box.width / 2) / video.videoWidth : 0;
+        const y = box ? (box.y + box.height / 2) / video.videoHeight : 0;
+        if (!box || !Number.isFinite(detection.score) || detection.score <= REG_AUTO_CAPTURE_SCORE ||
+            !Number.isFinite(area) || area < 0.08 || area > 0.6 ||
+            Math.abs(x - 0.5) > 0.18 || Math.abs(y - 0.5) > 0.18) {
+            resetRegAutoCapture();
+            return false;
+        }
+        const previous = regAutoCaptureState;
+        if (!previous || now - previous.last > 1200 ||
+            Math.abs(x - previous.x) > 0.04 || Math.abs(y - previous.y) > 0.04 ||
+            Math.abs(box.width / previous.width - 1) > 0.15 || Math.abs(box.height / previous.height - 1) > 0.15) {
+            regAutoCaptureState = { start: now, last: now, count: 1, x, y, width: box.width, height: box.height, fired: false };
+            return false;
+        }
+        previous.last = now;
+        previous.count++;
+        if (!previous.fired && previous.count >= 3 && now - previous.start >= REG_AUTO_CAPTURE_STABLE_MS) {
+            previous.fired = true;
+            return true;
+        }
+        return false;
+    }
+
+    document.getElementById('reg-auto-capture').addEventListener('change', resetRegAutoCapture);
+    document.getElementById('k-existing').addEventListener('change', resetRegAutoCapture);
+    document.addEventListener('visibilitychange', resetRegAutoCapture);
+
+    // Satu request deteksi pada satu waktu; token mencegah hasil dari sesi lama.
     function startRegLive() {
         stopRegLive();
+        const epoch = regLiveEpoch;
+        let detecting = false;
         const video = document.getElementById('reg-video-preview');
         const status = document.getElementById('reg-face-status');
         regLiveTimer = setInterval(async () => {
-            if (!video.srcObject || !faceModelsLoaded || typeof faceapi === 'undefined') return;
-            if (!video.videoWidth) return;
+            if (detecting || epoch !== regLiveEpoch) return;
+            if (!video.srcObject || !faceModelsLoaded || typeof faceapi === 'undefined' ||
+                !video.videoWidth || !video.videoHeight || regCameraBusy || regCaptureBusy || regPhotoData || document.hidden ||
+                !document.getElementById('tab-karyawan').classList.contains('active')) {
+                resetRegAutoCapture();
+                return;
+            }
             const stream = video.srcObject;
+            detecting = true;
             try {
                 const d = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 }));
-                if (video.srcObject !== stream || !regCameraActive()) return;
+                if (epoch !== regLiveEpoch || video.srcObject !== stream) return;
+                if (!regCameraActive() || regCameraBusy || regCaptureBusy || regPhotoData || document.hidden) {
+                    resetRegAutoCapture();
+                    return;
+                }
+                const automatic = canAutoCaptureRegFace();
+                const ready = automatic && updateRegAutoCapture(d, video, performance.now());
+                if (!automatic) resetRegAutoCapture();
                 if (d) {
                     const w = Math.round(d.box.width), h = Math.round(d.box.height);
                     const frac = (d.box.width * d.box.height) / (video.videoWidth * video.videoHeight);
                     let saran = '';
                     if (frac < 0.08) saran = ' — MAJU lebih dekat';
                     else if (frac > 0.6) saran = ' — sedikit MUNDUR';
+                    else if (automatic && regAutoCaptureState) saran = ' — tahan posisi, jepret otomatis…';
                     else saran = ' — BAGUS, klik Ambil!';
                     if (status && !regDescriptor) { status.className = 'small mt-1 text-primary'; status.innerText = 'Live: wajah terkunci skor ' + d.score.toFixed(2) + ' (' + w + 'x' + h + ')' + saran; }
                 } else {
                     if (status && !regDescriptor) { status.className = 'small mt-1 text-muted'; status.innerText = 'Live: wajah belum terlihat — hadap lurus, terang, dekat.'; }
                 }
-            } catch (e) {}
-        }, 800);
+                if (ready && canAutoCaptureRegFace()) await captureRegFace();
+            } catch (e) {
+                if (epoch === regLiveEpoch) resetRegAutoCapture();
+            } finally { detecting = false; }
+        }, 400);
     }
+
+    function syncRegResultName() {
+        const existing = document.getElementById('k-existing');
+        const opt = existing && existing.options ? existing.options[existing.selectedIndex] : null;
+        const name = opt ? opt.text.trim() : '';
+        document.getElementById('reg-result-name').textContent = name || '–';
+    }
+    document.getElementById('k-existing').addEventListener('change', syncRegResultName);
 
     function retakeRegFace() {
         if (regCaptureBusy || regCameraBusy) return;
@@ -1445,9 +1600,29 @@ if ('serviceWorker' in navigator) {
             syncRegCameraButtons();
             startRegLive();
         } else {
-            // Retry kamera hanya bila stream sudah berhenti; foto tidak diambil otomatis.
+            // Retry kamera hanya bila stream sudah berhenti; auto menunggu stabil lagi.
             startRegCamera();
         }
+    }
+
+    const REG_CAPTURE_WARNING_SCORE = 0.85;
+
+    async function getRegCapturedPhotoScore(image) {
+        try {
+            // Periksa JPEG yang tampil/disimpan, bukan skor maksimum frame live.
+            await image.decode();
+            const detection = await faceapi.detectSingleFace(image, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.15 }));
+            return detection && Number.isFinite(detection.score) && detection.score >= 0 && detection.score <= 1 ? detection.score : null;
+        } catch (error) {
+            console.warn('Skor foto pendaftaran belum tersedia:', error.message);
+            return null;
+        }
+    }
+
+    function getRegCaptureFeedback(score, points, label) {
+        if (score === null) return { warning: true, text: 'Skor deteksi foto belum tersedia. Sebaiknya Ambil Ulang; foto tetap bisa disimpan.' };
+        if (score < REG_CAPTURE_WARNING_SCORE) return { warning: true, text: 'Skor deteksi foto ' + score.toFixed(2).replace('.', ',') + ' (<0,85). Sebaiknya Ambil Ulang; foto tetap bisa disimpan.' };
+        return { warning: false, text: 'Ciri wajah OK (' + points + ' titik), siap disimpan. Klik ' + label + '!' };
     }
 
     async function captureRegFace() {
@@ -1472,6 +1647,7 @@ if ('serviceWorker' in navigator) {
         imgResult.style.display = 'block';
         regLastDetectScore = null;
         document.getElementById('reg-score-value').textContent = '–';
+        syncRegResultName();
         document.getElementById('reg-result-row').style.display = 'flex';
         regCaptureBusy = true;
         syncRegCameraButtons();
@@ -1481,6 +1657,7 @@ if ('serviceWorker' in navigator) {
         document.getElementById('btn-save-reg-face').style.display = 'inline-flex';
         if (status) { status.className = 'small mt-1 text-primary'; status.innerText = 'Mengekstrak (mencoba 6 frame)...'; }
         rlog('foto ' + vw + 'x' + vh + ', mulai ekstrak 6x...');
+        let capturedPhotoScore = null;
         try {
             let desc = null;
             for (let attempt = 1; attempt <= 6; attempt++) {
@@ -1500,15 +1677,18 @@ if ('serviceWorker' in navigator) {
                 alert('Gagal ekstrak setelah 6x percobaan. Cek status Live: tunggu sampai "BAGUS, klik Ambil!" baru klik.');
                 return;
             }
-            regDescriptor = Array.from(desc);
             stopRegLive();
-            if (status) { status.className = 'small mt-1 text-success'; status.innerText = 'Ciri wajah OK (' + regDescriptor.length + ' titik), siap disimpan. Klik Daftarkan Wajah!'; }
+            if (status) status.innerText = 'Memeriksa skor deteksi foto…';
+            capturedPhotoScore = await getRegCapturedPhotoScore(imgResult);
+            regDescriptor = Array.from(desc);
+            const feedback = getRegCaptureFeedback(capturedPhotoScore, regDescriptor.length, document.getElementById('reg-save-label').textContent);
+            if (status) { status.className = 'small mt-1 ' + (feedback.warning ? 'text-warning-emphasis' : 'text-success'); status.innerText = feedback.text; }
         } catch (e) { console.error(e); regDescriptor = null; if (status) status.innerText = 'Gagal ekstrak wajah: ' + e.message; }
         finally {
             regCaptureBusy = false;
             syncRegCameraButtons();
             retake.disabled = false;
-            document.getElementById('reg-score-value').textContent = regLastDetectScore === null ? '–' : regLastDetectScore.toFixed(2);
+            document.getElementById('reg-score-value').textContent = capturedPhotoScore === null ? '–' : capturedPhotoScore.toFixed(2);
             // Satu adjustment setelah capture, hanya bila Simpan keluar viewport.
             requestAnimationFrame(() => {
                 const save = document.getElementById('btn-save-reg-face');
@@ -1598,27 +1778,188 @@ if ('serviceWorker' in navigator) {
     let karyawanCache = null;
     let karyawanRequest = null;
     let karyawanTableRendered = false;
+    let employeePickerLimit = 3;
+    const EMPLOYEE_LIST_STEP = 30;
+    let employeeListLimit = EMPLOYEE_LIST_STEP;
+
+    function filterEmployeeList(data, query = '', factory = '', face = '', order = 'asc') {
+        const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('id');
+        const search = normalize(query.trim());
+        const filtered = (data || []).filter(k => {
+            const matchesSearch = normalize(k.nama).includes(search) || normalize(k.id).includes(search);
+            const matchesFactory = !factory || String(k.nama_pabrik || '') === factory;
+            const registered = Number(k.has_face) === 1;
+            const matchesFace = !face || (face === 'registered' ? registered : !registered);
+            return matchesSearch && matchesFactory && matchesFace;
+        });
+        return filterEmployeeChoices(filtered, '', order);
+    }
+
+    function renderEmployeeList() {
+        const choices = filterEmployeeList(karyawanCache,
+            document.getElementById('employee-list-search').value,
+            document.getElementById('employee-list-factory').value,
+            document.getElementById('employee-list-face').value,
+            document.getElementById('employee-list-sort').value);
+        const visible = choices.slice(0, employeeListLimit);
+        document.getElementById('employee-list-count').textContent = 'Menampilkan ' + visible.length + ' dari ' + choices.length + ' hasil · ' + (karyawanCache || []).length + ' karyawan aktif';
+        document.getElementById('table-karyawan').innerHTML = visible.map(k => {
+            const faceBadge = Number(k.has_face) === 1
+                ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> Terdaftar</span>'
+                : '<span class="badge bg-secondary"><i class="fa-solid fa-circle-minus"></i> Belum</span>';
+            return `<tr><td>${faceBadge}</td><td><code>${escHtml(k.id)}</code></td><td><strong>${escHtml(k.nama)}</strong></td><td>${escHtml(k.posisi) || '-'}</td><td>${escHtml(k.nama_pabrik) || '-'}</td></tr>`;
+        }).join('') || '<tr><td colspan="5"><div class="empty-state">Tidak ada karyawan yang sesuai filter.</div></td></tr>';
+        document.getElementById('employee-list-more').hidden = choices.length <= employeeListLimit;
+    }
+
+    function syncEmployeeList() {
+        const data = karyawanCache || [];
+        document.getElementById('employee-list-summary').textContent = data.length + ' karyawan aktif · Cari dan filter daftar melalui popup.';
+        document.getElementById('employee-list-open').disabled = false;
+        const factory = document.getElementById('employee-list-factory');
+        const selected = factory.value;
+        const factories = [...new Set(data.map(k => k.nama_pabrik).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id'));
+        factory.innerHTML = '<option value="">Semua pabrik</option>' + factories.map(name => `<option value="${escHtml(name)}">${escHtml(name)}</option>`).join('');
+        factory.value = factories.includes(selected) ? selected : '';
+        employeeListLimit = EMPLOYEE_LIST_STEP;
+        renderEmployeeList();
+    }
+
+    document.getElementById('employee-list-open').addEventListener('click', () => {
+        employeeListLimit = EMPLOYEE_LIST_STEP;
+        renderEmployeeList();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('employee-list-modal')).show();
+    });
+    ['employee-list-search', 'employee-list-factory', 'employee-list-face', 'employee-list-sort'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'employee-list-search' ? 'input' : 'change', () => {
+            employeeListLimit = EMPLOYEE_LIST_STEP;
+            renderEmployeeList();
+        });
+    });
+    document.getElementById('employee-list-more').addEventListener('click', () => {
+        employeeListLimit += EMPLOYEE_LIST_STEP;
+        renderEmployeeList();
+    });
+
+    function submitEmployeeListSearch(event) {
+        event.preventDefault();
+        employeeListLimit = EMPLOYEE_LIST_STEP;
+        renderEmployeeList();
+        const results = document.getElementById('employee-list-results');
+        // Pindahkan fokus dari input agar keyboard HP menutup, tanpa loncatan scroll.
+        results.focus({ preventScroll: true });
+        results.scrollIntoView({
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+            block: 'start'
+        });
+    }
+    document.getElementById('employee-list-search-form').addEventListener('submit', submitEmployeeListSearch);
+
+    function filterEmployeeChoices(data, query = '', order = 'asc') {
+        const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('id');
+        const search = normalize(query.trim());
+        return (data || []).filter(k => normalize(k.nama).includes(search)).sort((a, b) => {
+            const byName = String(a.nama || '').localeCompare(String(b.nama || ''), 'id', { sensitivity: 'base', numeric: true });
+            const byId = String(a.id).localeCompare(String(b.id), 'id', { numeric: true });
+            return (byName || byId) * (order === 'desc' ? -1 : 1);
+        });
+    }
+
+    function syncEmployeePickerLabel() {
+        const existing = document.getElementById('k-existing');
+        const selected = existing.options[existing.selectedIndex];
+        document.getElementById('employee-picker-label').textContent = existing.value && selected ? selected.text : '— Pilih karyawan aktif —';
+        syncRegRegistrationStatus();
+    }
+
+    function syncRegRegistrationStatus() {
+        const id = document.getElementById('k-existing').value;
+        const employee = (karyawanCache || []).find(k => String(k.id) === id);
+        const registered = !!employee && Number(employee.has_face) === 1;
+        document.getElementById('reg-save-label').textContent = registered ? 'Daftarkan Ulang Wajah' : 'Daftarkan Wajah';
+        document.getElementById('reg-existing-face-hint').hidden = !registered;
+    }
+
+    function renderEmployeeChoices() {
+        const choices = filterEmployeeChoices(karyawanCache, document.getElementById('employee-search').value, document.getElementById('employee-sort').value);
+        const selected = document.getElementById('k-existing').value;
+        document.getElementById('employee-picker-results').classList.toggle('employee-picker__results--expanded', employeePickerLimit > 3);
+        document.getElementById('employee-picker-count').textContent = choices.length + ' karyawan';
+        document.getElementById('employee-picker-results').innerHTML = choices.slice(0, employeePickerLimit).map(k =>
+            `<button type="button" class="employee-picker__option" data-employee-id="${escHtml(k.id)}" aria-pressed="${String(k.id) === selected}">${escHtml(k.nama)} <span>(${escHtml(k.id)})</span>${Number(k.has_face) === 1 ? ' <small class="employee-picker__registered">Sudah terdaftar</small>' : ''}</button>`
+        ).join('') || '<p class="employee-picker__empty">Tidak ada karyawan yang cocok.</p>';
+        document.getElementById('employee-picker-more').hidden = choices.length <= employeePickerLimit;
+    }
+
+    function closeEmployeePicker() {
+        bootstrap.Modal.getInstance(document.getElementById('employee-picker-panel'))?.hide();
+    }
+
+    document.getElementById('employee-picker-toggle').addEventListener('click', () => {
+        const panel = document.getElementById('employee-picker-panel');
+        document.getElementById('employee-search').value = '';
+        employeePickerLimit = 3;
+        renderEmployeeChoices();
+        document.getElementById('employee-picker-results').scrollTop = 0;
+        // Bootstrap focuses the dialog, not the search input: no automatic keyboard.
+        bootstrap.Modal.getOrCreateInstance(panel).show();
+    });
+    ['employee-search', 'employee-sort'].forEach(id => {
+        document.getElementById(id).addEventListener(id === 'employee-search' ? 'input' : 'change', () => {
+            employeePickerLimit = 3;
+            renderEmployeeChoices();
+            document.getElementById('employee-picker-results').scrollTop = 0;
+        });
+    });
+    document.getElementById('employee-picker-more').addEventListener('click', () => {
+        employeePickerLimit = employeePickerLimit === 3 ? 50 : employeePickerLimit + 50;
+        renderEmployeeChoices();
+    });
+    document.getElementById('employee-picker-results').addEventListener('click', event => {
+        const button = event.target.closest('[data-employee-id]');
+        if (!button) return;
+        const existing = document.getElementById('k-existing');
+        existing.value = button.dataset.employeeId;
+        existing.dispatchEvent(new Event('change', { bubbles: true }));
+        closeEmployeePicker();
+    });
+    document.getElementById('k-existing').addEventListener('change', syncEmployeePickerLabel);
+    function syncEmployeePickerViewport() {
+        const panel = document.getElementById('employee-picker-panel');
+        const viewport = window.visualViewport;
+        panel.style.setProperty('--employee-viewport-height', (viewport ? viewport.height : window.innerHeight) + 'px');
+        panel.style.setProperty('--employee-viewport-top', (viewport ? viewport.offsetTop : 0) + 'px');
+    }
+    document.getElementById('employee-picker-panel').addEventListener('show.bs.modal', () => {
+        document.getElementById('employee-picker-toggle').setAttribute('aria-expanded', 'true');
+        syncEmployeePickerViewport();
+        window.visualViewport?.addEventListener('resize', syncEmployeePickerViewport);
+        window.visualViewport?.addEventListener('scroll', syncEmployeePickerViewport);
+        window.addEventListener('resize', syncEmployeePickerViewport);
+    });
+    document.getElementById('employee-picker-panel').addEventListener('hidden.bs.modal', () => {
+        window.visualViewport?.removeEventListener('resize', syncEmployeePickerViewport);
+        window.visualViewport?.removeEventListener('scroll', syncEmployeePickerViewport);
+        window.removeEventListener('resize', syncEmployeePickerViewport);
+        const toggle = document.getElementById('employee-picker-toggle');
+        toggle.setAttribute('aria-expanded', 'false');
+        if (document.getElementById('tab-karyawan').classList.contains('active')) toggle.focus({ preventScroll: true });
+    });
+    document.addEventListener('hidden.bs.tab', event => {
+        if (event.target.getAttribute('data-bs-target') === '#tab-karyawan') closeEmployeePicker();
+    });
+
     function renderKaryawanAdmin() {
         if (!karyawanCache || karyawanTableRendered || !document.getElementById('tab-karyawan').classList.contains('active')) return;
         const existing = document.getElementById('k-existing');
         const selected = existing.value;
-        const options = karyawanCache.map(k => `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`).join('');
+        const options = filterEmployeeChoices(karyawanCache).map(k => `<option value="${escHtml(k.id)}">${escHtml(k.nama)} (${escHtml(k.id)})</option>`).join('');
         existing.innerHTML = '<option value="">-- Pilih karyawan aktif --</option>' + options;
         existing.value = selected;
+        document.getElementById('employee-picker-toggle').disabled = false;
+        syncEmployeePickerLabel();
+        renderEmployeeChoices();
 
-        const html = karyawanCache.map(k => {
-            const faceBadge = k.has_face
-                ? '<span class="badge bg-success"><i class="fa-solid fa-circle-check"></i> Terdaftar</span>'
-                : '<span class="badge bg-secondary"><i class="fa-solid fa-circle-minus"></i> Belum</span>';
-            return `<tr>
-                <td>${faceBadge}</td>
-                <td><code>${escHtml(k.id)}</code></td>
-                <td><strong>${escHtml(k.nama)}</strong></td>
-                <td>${escHtml(k.posisi) || '-'}</td>
-                <td>${escHtml(k.nama_pabrik) || '-'}</td>
-            </tr>`;
-        }).join('');
-        document.getElementById('table-karyawan').innerHTML = html || '<tr><td colspan="5"><div class="empty-state"><i class="fa-regular fa-user"></i>Belum ada karyawan</div></td></tr>';
         karyawanTableRendered = true;
     }
 
@@ -1633,11 +1974,17 @@ if ('serviceWorker' in navigator) {
             })
             .then(data => {
                 karyawanCache = data;
+                syncEmployeeList();
                 karyawanTableRendered = false;
                 renderKaryawanAdmin();
                 return data;
             })
-            .catch(err => { console.error('Error loading karyawan:', err); return null; })
+            .catch(err => {
+                console.error('Error loading karyawan:', err);
+                if (!karyawanCache) document.getElementById('employee-picker-label').textContent = 'Data gagal dimuat. Buka ulang tab Karyawan.';
+                if (!karyawanCache) document.getElementById('employee-list-summary').textContent = 'Data gagal dimuat. Buka ulang tab Karyawan untuk mencoba lagi.';
+                return null;
+            })
             .finally(() => { karyawanRequest = null; });
         return karyawanRequest;
     }
@@ -1953,6 +2300,8 @@ if ('serviceWorker' in navigator) {
             if (!res.ok) throw new Error(resJson.error || 'Gagal simpan');
             e.target.reset();
             document.getElementById('k-existing').value = '';
+            syncEmployeePickerLabel();
+            closeEmployeePicker();
             regPhotoData = "";
             regDescriptor = null;
             document.getElementById('reg-img-result').style.display = 'none';

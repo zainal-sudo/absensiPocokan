@@ -66,7 +66,8 @@ app.get('/api/karyawan', (req, res) => {
   const query = `
     SELECT k.kar_kode as id, k.kar_nama as nama, k.kar_bag_kode as posisi,
            p.pab_nama as nama_pabrik,
-           CASE WHEN k.foto_wajah IS NOT NULL AND k.foto_wajah != '' THEN 1 ELSE 0 END as has_face
+           CASE WHEN k.foto_wajah IS NOT NULL AND TRIM(k.foto_wajah) != ''
+                     AND k.face_descriptor IS NOT NULL AND TRIM(k.face_descriptor) != '' THEN 1 ELSE 0 END as has_face
     FROM tkaryawan k
     LEFT JOIN tpabrik p ON k.kar_pab_kode = p.pab_kode
     WHERE k.kar_isaktif = 1
@@ -84,7 +85,7 @@ app.get('/api/karyawan', (req, res) => {
 // API: Face descriptors untuk auto-recognition (ringan, tanpa foto base64)
 app.get('/api/karyawan/descriptors', (req, res) => {
   pool.query(
-    `SELECT kar_kode as id, kar_nama as nama, face_descriptor FROM tkaryawan WHERE kar_isaktif = 1 AND face_descriptor IS NOT NULL AND face_descriptor != ''`,
+    `SELECT kar_kode as id, kar_nama as nama, face_descriptor FROM tkaryawan WHERE kar_isaktif = 1 AND foto_wajah IS NOT NULL AND TRIM(foto_wajah) != '' AND face_descriptor IS NOT NULL AND TRIM(face_descriptor) != ''`,
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(results);
@@ -96,11 +97,12 @@ app.get('/api/karyawan/descriptors', (req, res) => {
 app.put('/api/karyawan/:id/face', (req, res) => {
   const { foto_wajah, face_descriptor } = req.body;
   const id = req.params.id;
-  if (!face_descriptor) return res.status(400).json({ error: 'face_descriptor wajib!' });
+  if (typeof foto_wajah !== 'string' || !foto_wajah.trim()) return res.status(400).json({ error: 'foto_wajah wajib!' });
+  if (!face_descriptor || (typeof face_descriptor === 'string' && !face_descriptor.trim()) || (Array.isArray(face_descriptor) && face_descriptor.length === 0)) return res.status(400).json({ error: 'face_descriptor wajib!' });
   const descStr = typeof face_descriptor === 'string' ? face_descriptor : JSON.stringify(face_descriptor);
   pool.query(
     `UPDATE tkaryawan SET foto_wajah = ?, face_descriptor = ? WHERE kar_kode = ? AND kar_isaktif = 1`,
-    [foto_wajah || '', descStr, id],
+    [foto_wajah, descStr, id],
     (err, result) => {
       if (err) return res.status(500).json({ error: err.message });
       if (result.affectedRows === 0) return res.status(404).json({ error: 'Karyawan tidak ditemukan atau sudah nonaktif. Periksa Master Karyawan Pocokan.' });

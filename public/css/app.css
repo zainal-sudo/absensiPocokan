@@ -397,7 +397,7 @@ code {
 
 .registration-camera-launch {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) 112px;
     gap: 8px;
 }
 
@@ -407,7 +407,79 @@ code {
     padding-right: 10px;
 }
 
-.registration-camera-launch .fa-camera { flex-shrink: 0; }
+.registration-camera-launch .fa-camera { flex-shrink: 0; margin-inline-start: 4px; }
+#btn-reg-diagnostics { width: 112px; }
+#reg-diagnostics-label { min-width: 0; white-space: normal; }
+
+/* Pencarian pilihan karyawan dalam popup Bootstrap. */
+.employee-picker__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: left;
+    width: 100%;
+    background-image: none;
+}
+.employee-picker__toggle span { min-width: 0; overflow-wrap: anywhere; }
+.employee-picker__toggle i { flex-shrink: 0; font-size: 12px; }
+.employee-picker__panel {
+    padding: 12px;
+    background: #fff;
+}
+#employee-picker-panel [hidden] { display: none !important; }
+#employee-picker-panel {
+    top: var(--employee-viewport-top, 0px);
+    height: var(--employee-viewport-height, 100dvh);
+    overflow: hidden;
+}
+#employee-picker-panel .modal-dialog {
+    margin: 8px auto;
+    width: calc(100% - 16px);
+    min-height: calc(var(--employee-viewport-height, 100dvh) - 16px);
+    height: calc(var(--employee-viewport-height, 100dvh) - 16px);
+}
+#employee-picker-panel .modal-content { max-height: 100%; border: 0; border-radius: var(--r-lg); }
+#employee-picker-panel .modal-body { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+#employee-picker-panel .modal-header,
+#employee-search,
+.employee-picker__toolbar,
+#employee-picker-more { flex-shrink: 0; }
+#employee-picker-panel .modal-title { font-size: 18px; }
+.employee-picker__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 0;
+}
+.employee-picker__toolbar .manual__hint { margin: 0; }
+.employee-picker__toolbar .form-select-ui { width: 140px; flex-shrink: 0; }
+.employee-picker__results { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.employee-picker__results--expanded { max-height: 240px; max-height: min(240px, 36svh); overflow-y: auto; }
+.employee-picker__option {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 10px;
+    border: 0;
+    border-bottom: 1px solid var(--gray-100);
+    background: #fff;
+    color: var(--gray-900);
+    text-align: left;
+    font: inherit;
+    overflow-wrap: anywhere;
+}
+.employee-picker__option span { color: var(--gray-500); }
+.employee-picker__registered { display: block; font-size: 11px; color: var(--success-700); }
+.registration-reregister-hint { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--gray-500); }
+.employee-picker__option:hover, .employee-picker__option[aria-pressed="true"] { background: var(--brand-50); }
+.employee-picker__option:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; }
+.employee-picker__empty { margin: 8px 0; color: var(--gray-500); font-size: 13px; }
+#employee-picker-more { margin-top: 8px; }
+@media (max-width: 767.98px) {
+    #employee-search { font-size: 16px; }
+}
 
 .registration-camera-focus #reg-video-preview {
     margin-top: 0;
@@ -448,10 +520,10 @@ code {
 
 /* Hasil foto mepet kiri + skor di kanan */
 .registration-result {
-    align-items: center;
+    align-items: flex-end;
     justify-content: flex-start;
     gap: 12px;
-    margin-top: 10px;
+    margin-top: 4px;
     text-align: left;
 }
 
@@ -461,16 +533,26 @@ code {
 
 .registration-score {
     display: flex;
+    flex: 1;
     flex-direction: column;
     align-items: flex-start;
+    text-align: left;
+    justify-content: center;
     line-height: 1.2;
 }
 
 #reg-score-value {
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 800;
     color: var(--gray-900);
     font-variant-numeric: tabular-nums;
+}
+
+.registration-score__name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gray-900);
+    overflow-wrap: anywhere;
 }
 
 .registration-score__label {
@@ -479,11 +561,18 @@ code {
     color: var(--gray-500);
 }
 
+.registration-score__hint {
+    margin-top: 2px;
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--gray-400);
+}
+
 /* Ruang status tetap: perubahan panjang teks tidak menggeser tombol capture. */
 .registration-status {
     height: 3.5rem;
     margin-top: 6px;
-    padding: 5px 10px;
+    padding: 5px 10px 2px;
     overflow-y: auto;
     overflow-wrap: anywhere;
     border: 1px solid var(--gray-200);
@@ -506,6 +595,10 @@ code {
 
 .registration-lenses { margin: 0 0 12px; text-align: left; }
 .registration-lenses .form-select-ui { width: 100%; min-width: 0; }
+.registration-auto { margin: 0 0 8px; text-align: left; }
+.registration-auto label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.registration-auto input { width: 18px; height: 18px; accent-color: var(--brand-600); flex-shrink: 0; }
+.registration-auto > span { display: block; font-size: 11px; line-height: 1.35; color: var(--gray-500); }
 
 .registration-result-actions > .btn-ui {
     min-width: 0;
@@ -513,11 +606,37 @@ code {
     margin-top: 12px;
     padding-left: 10px;
     padding-right: 10px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 14px;
+    line-height: 1.35;
+    text-align: center;
 }
 
-.registration-result-actions .fa-solid { flex-shrink: 0; }
+.registration-result-actions > .btn-ui > span {
+    min-width: 0;
+    flex: 0 1 auto;
+    width: max-content;
+    text-wrap: wrap;
+}
+.registration-result-actions .fa-solid {
+    display: inline-flex;
+    flex: 0 0 16px;
+    width: 16px;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    font-size: 16px;
+    line-height: 1;
+}
 
 #btn-retake-reg-face > .fa-solid { transform: translateX(-4px); }
+.registration-result-actions #reg-save-label {
+    /* Ukuran blok mengikuti dua kata terpanjang, bukan lebar label satu baris. */
+    width: 14.5ch;
+    max-width: 100%;
+}
 
 #btn-save-reg-face { scroll-margin-bottom: 12px; }
 
@@ -532,7 +651,46 @@ code {
         max-height: 96px;
         max-width: 100%;
         object-fit: contain;
-        margin-top: 8px;
+        margin: 0;
+    }
+    /* Hanya hasil capture: rapat tanpa mengubah tinggi status saat scan live. */
+    .registration-camera-focus:has(#reg-result-row[style*="display: flex"]) .registration-status {
+        height: auto;
+        max-height: 4rem;
+        margin-top: 4px;
+        padding: 4px 8px;
+    }
+    .registration-camera-focus:has(#reg-result-row[style*="display: flex"]) .registration-camera-controls {
+        margin: 0;
+    }
+    .registration-result {
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 6px;
+    }
+    .registration-result #reg-img-result {
+        flex-shrink: 0;
+        max-width: 30%;
+    }
+    .registration-score {
+        min-width: 0;
+        gap: 1px;
+        line-height: 1.15;
+    }
+    .registration-score__hint {
+        margin-top: 0;
+        line-height: 1.25;
+    }
+    .registration-result-actions {
+        grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+        gap: 6px;
+        margin-left: -4px;
+        width: calc(100% + 4px);
+    }
+    .registration-result-actions > .btn-ui {
+        margin-top: 6px;
+        min-height: 56px;
+        padding: 9px 8px;
     }
     .registration-camera-focus #reg-debug-log { max-height: 64px !important; }
 }
@@ -659,6 +817,20 @@ tr#att-more-row {
    MODAL Absensi Hari Ini (mobile full-screen) — renderer lama direuse
    ========================================================================== */
 .modal-sub { margin: 0; font-size: 12.5px; font-weight: 500; color: var(--gray-500); }
+.employee-list-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.employee-list-search { grid-column: 1 / -1; }
+.employee-list-search-row { display: flex; gap: 8px; }
+.employee-list-search-row input { flex: 1; min-width: 0; }
+.employee-list-search-row button { flex-shrink: 0; }
+#employee-list-results:focus-visible { outline: 2px solid var(--brand-500); outline-offset: -2px; }
+#employee-list-modal .modal-content { border: 0; border-radius: var(--r-lg); overflow: hidden; }
+#employee-list-modal .table-scroll { max-height: none; }
+#employee-list-modal [hidden] { display: none !important; }
+#employee-list-more, #employee-list-open { margin-top: 12px; }
+@media (max-width: 575.98px) {
+    .employee-list-filters { grid-template-columns: minmax(0, 1fr); }
+    #employee-list-modal .modal-content { border-radius: 0; }
+}
 #att-modal .modal-content { border: 0; border-radius: var(--r-lg); overflow: hidden; }
 #att-modal .modal-header { align-items: baseline; flex-wrap: wrap; gap: 2px 8px; border-bottom: 1px solid var(--gray-100); }
 #att-modal .modal-body { padding: 12px 12px 6px; }
